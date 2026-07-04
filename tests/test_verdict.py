@@ -6,7 +6,7 @@ from modeldna.calibration import DEFAULT_CALIBRATOR, LogisticCalibrator
 from modeldna.compare import Evidence, compare_fingerprints
 from modeldna.fingerprint.extract import extract_fingerprint
 from modeldna.io.source import LocalSource
-from modeldna.verdict import Thresholds, Verdict, VerdictClass, judge
+from modeldna.verdict import VerdictClass, judge
 
 
 def fake_evidence(

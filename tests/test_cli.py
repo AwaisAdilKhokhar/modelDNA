@@ -95,7 +95,7 @@ def test_scan_terminal_output(env):
 def test_scan_html_report(env, tmp_path):
     _add(env, "base", "local/base", "test-family")
     out = tmp_path / "report.html"
-    r = runner.invoke(app, ["scan", str(env / "ft"), "--report", str(out), "--json"])
+    runner.invoke(app, ["scan", str(env / "ft"), "--report", str(out), "--json"])
     assert out.exists()
     html = out.read_text(encoding="utf-8")
     assert "modeldna · lineage report" in html

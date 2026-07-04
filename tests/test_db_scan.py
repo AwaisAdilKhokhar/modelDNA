@@ -1,4 +1,3 @@
-import numpy as np
 import pytest
 
 from conftest import make_tiny_llama
