@@ -1,0 +1,154 @@
+"""Shared test fixtures: synthetic safetensors writers and tiny fake models."""
+
+from __future__ import annotations
+
+import json
+import struct
+from pathlib import Path
+
+import numpy as np
+import pytest
+
+_NP_TO_ST = {
+    np.dtype("float64"): "F64",
+    np.dtype("float32"): "F32",
+    np.dtype("float16"): "F16",
+    np.dtype("int64"): "I64",
+    np.dtype("int32"): "I32",
+    np.dtype("int8"): "I8",
+    np.dtype("uint8"): "U8",
+}
+
+
+def write_safetensors(path: Path, tensors: dict[str, np.ndarray]) -> None:
+    """Serialize tensors in safetensors format (little-endian, C-order)."""
+    header: dict[str, dict] = {}
+    payload = bytearray()
+    for name, arr in tensors.items():
+        arr = np.ascontiguousarray(arr)
+        st_dtype = _NP_TO_ST[arr.dtype]
+        start = len(payload)
+        payload += arr.tobytes()
+        header[name] = {
+            "dtype": st_dtype,
+            "shape": list(arr.shape),
+            "data_offsets": [start, len(payload)],
+        }
+    hbytes = json.dumps(header).encode()
+    with open(path, "wb") as f:
+        f.write(struct.pack("<Q", len(hbytes)))
+        f.write(hbytes)
+        f.write(payload)
+
+
+def make_tiny_llama(
+    root: Path,
+    *,
+    n_layers: int = 4,
+    hidden: int = 32,
+    n_heads: int = 4,
+    n_kv_heads: int = 2,
+    intermediate: int = 64,
+    vocab: int = 128,
+    seed: int = 0,
+    sharded: bool = False,
+    base_weights: dict[str, np.ndarray] | None = None,
+    noise: float = 0.0,
+    readme: str | None = None,
+) -> dict[str, np.ndarray]:
+    """Write a tiny llama-architecture model to `root`.
+
+    If `base_weights` is given, start from those and add gaussian noise of
+    scale `noise` — i.e. simulate a fine-tune of the base.
+    """
+    rng = np.random.default_rng(seed)
+    head_dim = hidden // n_heads
+    kv_dim = n_kv_heads * head_dim
+
+    if base_weights is not None:
+        tensors = {
+            k: (v + rng.normal(0, noise, v.shape)).astype(np.float32)
+            for k, v in base_weights.items()
+        }
+    else:
+        tensors = {}
+        tensors["model.embed_tokens.weight"] = rng.normal(0, 0.02, (vocab, hidden)).astype(
+            np.float32
+        )
+        for i in range(n_layers):
+            p = f"model.layers.{i}."
+            scale = 0.02 * (1 + 0.1 * i)  # give sigma-curves layer structure
+            tensors[p + "self_attn.q_proj.weight"] = rng.normal(
+                0, scale, (hidden, hidden)
+            ).astype(np.float32)
+            tensors[p + "self_attn.k_proj.weight"] = rng.normal(
+                0, scale * 0.9, (kv_dim, hidden)
+            ).astype(np.float32)
+            tensors[p + "self_attn.v_proj.weight"] = rng.normal(
+                0, scale * 1.1, (kv_dim, hidden)
+            ).astype(np.float32)
+            tensors[p + "self_attn.o_proj.weight"] = rng.normal(
+                0, scale, (hidden, hidden)
+            ).astype(np.float32)
+            tensors[p + "mlp.gate_proj.weight"] = rng.normal(
+                0, scale, (intermediate, hidden)
+            ).astype(np.float32)
+            tensors[p + "mlp.up_proj.weight"] = rng.normal(
+                0, scale, (intermediate, hidden)
+            ).astype(np.float32)
+            tensors[p + "mlp.down_proj.weight"] = rng.normal(
+                0, scale, (hidden, intermediate)
+            ).astype(np.float32)
+            tensors[p + "input_layernorm.weight"] = (
+                1 + rng.normal(0, 0.05, hidden)
+            ).astype(np.float32)
+            tensors[p + "post_attention_layernorm.weight"] = (
+                1 + rng.normal(0, 0.05, hidden)
+            ).astype(np.float32)
+        tensors["model.norm.weight"] = (1 + rng.normal(0, 0.05, hidden)).astype(np.float32)
+        tensors["lm_head.weight"] = rng.normal(0, 0.02, (vocab, hidden)).astype(np.float32)
+
+    root.mkdir(parents=True, exist_ok=True)
+    config = {
+        "architectures": ["LlamaForCausalLM"],
+        "model_type": "llama",
+        "hidden_size": hidden,
+        "num_hidden_layers": n_layers,
+        "num_attention_heads": n_heads,
+        "num_key_value_heads": n_kv_heads,
+        "intermediate_size": intermediate,
+        "vocab_size": vocab,
+        "rope_theta": 10000.0,
+        "rms_norm_eps": 1e-5,
+        "torch_dtype": "float32",
+    }
+    (root / "config.json").write_text(json.dumps(config, indent=2))
+    (root / "tokenizer.json").write_text(json.dumps({"model": {"vocab": {}}, "seed": seed if base_weights is None else "inherited"}))
+    if readme is not None:
+        (root / "README.md").write_text(readme)
+
+    if sharded:
+        names = list(tensors)
+        half = len(names) // 2
+        shards = {
+            "model-00001-of-00002.safetensors": {k: tensors[k] for k in names[:half]},
+            "model-00002-of-00002.safetensors": {k: tensors[k] for k in names[half:]},
+        }
+        weight_map = {}
+        for shard_name, shard_tensors in shards.items():
+            write_safetensors(root / shard_name, shard_tensors)
+            for k in shard_tensors:
+                weight_map[k] = shard_name
+        (root / "model.safetensors.index.json").write_text(
+            json.dumps({"metadata": {}, "weight_map": weight_map})
+        )
+    else:
+        write_safetensors(root / "model.safetensors", tensors)
+    return tensors
+
+
+@pytest.fixture
+def tiny_model(tmp_path: Path):
+    root = tmp_path / "base"
+    tensors = make_tiny_llama(root)
+    return root, tensors
