@@ -32,6 +32,8 @@ class ScanResult:
     db_version: int
     bytes_read: int = 0
     tool_version: str = __version__
+    #: fingerprint of the winning candidate (for plots), when available
+    best_fingerprint: Fingerprint | None = None
 
     @property
     def exit_code(self) -> int:
@@ -56,6 +58,15 @@ class ScanResult:
                 k: self.background.range_str(k)
                 for k in ("sigma_r", "vector_cos", "pcs_cos", "spectra_r")
             },
+            "curves": {
+                "suspect_sigma": self.fingerprint.sigma_curves,
+                "best_sigma": (
+                    self.best_fingerprint.sigma_curves if self.best_fingerprint else {}
+                ),
+                "best_id": (
+                    self.best_fingerprint.model_id if self.best_fingerprint else ""
+                ),
+            },
         }
 
 
@@ -74,11 +85,13 @@ def scan(
 
     evidences: list[tuple[Evidence, str]] = []
     dtypes: dict[str, str] = {}
+    ref_fps: dict[str, Fingerprint] = {}
     for entry in db.candidates_for(fp.arch):
-        ref_fp = db.load_fingerprint(entry.model_id)
         # never judge a model against its own reference entry
         if entry.model_id == target:
             continue
+        ref_fp = db.load_fingerprint(entry.model_id)
+        ref_fps[entry.model_id] = ref_fp
         evidences.append((compare_fingerprints(fp, ref_fp), entry.family))
         dtypes[entry.model_id] = entry.torch_dtype
 
@@ -105,6 +118,9 @@ def scan(
         background=db.background(),
         db_version=db.version,
         bytes_read=src.bytes_read,
+        best_fingerprint=(
+            ref_fps.get(verdict.best.candidate_id) if verdict.best else None
+        ),
     )
 
 
