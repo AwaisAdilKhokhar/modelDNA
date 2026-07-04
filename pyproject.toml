@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "modeldna"
+version = "0.1.0"
+description = "Forensic lineage detection for open-weight LLMs: fingerprint a model from its weights and find out what it really descends from."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Muhammad Awais Bin Adil", email = "binadilawais@gmail.com" }]
+keywords = ["llm", "fingerprinting", "provenance", "lineage", "safetensors", "forensics"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Security",
+]
+dependencies = [
+    "numpy>=1.24",
+    "requests>=2.28",
+    "huggingface_hub>=0.20",
+    "typer>=0.9",
+    "rich>=13.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "ruff>=0.4"]
+
+[project.scripts]
+modeldna = "modeldna.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/awaisbinadil/modeldna"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
