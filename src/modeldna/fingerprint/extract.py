@@ -152,6 +152,13 @@ def _even_subsample(v: np.ndarray, cap: int = 256) -> np.ndarray:
     return v[idx]
 
 
+def _sketch_band(rows: int, tseed: int) -> tuple[int, int]:
+    """(first row, row count) of the seeded row band the SVD sketch reads."""
+    r = min(rows, SKETCH_ROWS)
+    row0 = tseed % (rows - r + 1) if rows > r else 0
+    return row0, r
+
+
 class FingerprintExtractor:
     def __init__(
         self,
@@ -202,11 +209,58 @@ class FingerprintExtractor:
             created_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
         )
         two_d_roles = self.cmap.present_roles(ATTN_ROLES + MLP_ROLES)
-        self._extract_sigma_and_pcs(fp, two_d_roles)
-        self._extract_vectors(fp)
-        self._extract_spectra(fp, [r for r in two_d_roles if r in ATTN_ROLES])
+        self._prefetch(two_d_roles)
+        try:
+            self._extract_sigma_and_pcs(fp, two_d_roles)
+            self._extract_vectors(fp)
+            self._extract_spectra(fp, [r for r in two_d_roles if r in ATTN_ROLES])
+        finally:
+            self.index.clear_prefetch()
         fp.bytes_read = self.source.bytes_read
         return fp
+
+    def _prefetch(self, two_d_roles: list[str]) -> None:
+        """Fetch every byte range this extraction will read in one pass.
+
+        Sample positions are pure functions of (seed, role, layer, tensor
+        size), so the complete read plan is known before any data moves.
+        Handing it to WeightIndex.prefetch turns thousands of sequential
+        round trips into one coalesced, concurrent sweep per shard; the
+        extraction below then decodes the very same bytes it would have
+        fetched lazily, so fingerprints stay bit-identical.
+        """
+        if not (self.source.is_remote and self.mode == "fast"):
+            # Local reads are already cheap, and full mode would mean
+            # holding entire shards in memory.
+            return
+        plan: list[tuple[str, int, int]] = []
+        for role in two_d_roles:
+            for layer, name in enumerate(self.cmap.role_by_layer(role)):
+                t = self.index.info(name)
+                tseed = self._tensor_seed(role, layer)
+                for s, e in self.index.plan_sample(
+                    name, tseed, SAMPLE_BLOCKS, SAMPLE_BLOCK_LEN
+                ):
+                    plan.append((t.shard, s, e))
+        vector_names: list[str] = []
+        for role in self.cmap.present_roles(NORM_ROLES) + self.cmap.bias_roles():
+            vector_names.extend(self.cmap.role_by_layer(role))
+        if "norm.final" in self.cmap.globals:
+            vector_names.append(self.cmap.globals["norm.final"])
+        for name in vector_names:
+            t = self.index.info(name)
+            plan.append((t.shard, t.start, t.end))
+        for role in [r for r in two_d_roles if r in ATTN_ROLES]:
+            names = self.cmap.role_by_layer(role)
+            for layer in range(0, len(names), SPECTRA_STRIDE_FAST):
+                t = self.index.info(names[layer])
+                if len(t.shape) != 2:
+                    continue
+                rows, cols = t.shape
+                row0, r = _sketch_band(rows, self._tensor_seed(role, layer))
+                b0 = t.start + row0 * cols * t.itemsize
+                plan.append((t.shard, b0, b0 + r * cols * t.itemsize))
+        self.index.prefetch(plan)
 
     def _extract_sigma_and_pcs(self, fp: Fingerprint, roles: list[str]) -> None:
         n_layers = self.cmap.n_layers
@@ -252,8 +306,7 @@ class FingerprintExtractor:
                     continue
                 rows, cols = info.shape
                 tseed = self._tensor_seed(role, layer)
-                r = min(rows, SKETCH_ROWS)
-                row0 = tseed % (rows - r + 1) if rows > r else 0
+                row0, r = _sketch_band(rows, tseed)
                 if self.mode == "fast":
                     block = self.index.read_flat_slice(name, row0 * cols, r * cols)
                     block = block.reshape(r, cols)
