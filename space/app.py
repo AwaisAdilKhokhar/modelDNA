@@ -277,6 +277,12 @@ footer { display: none !important; }
 
 .mdna-mono { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
 
+/* the theme font ships only 400 and 600 faces — <b> must use the real 600,
+   never a synthetic 700 (faux bold thins diagonals: the A in DNA) */
+.mdna-brand b, .mdna-thesis b, .mdna-card b, .mdna-foot b, .mdna-verdict b {
+  font-weight: 600; }
+.mdna-brand h1 { font-weight: 400; }
+
 /* header */
 .mdna-brand { display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
   margin: 6px 0 2px; }
