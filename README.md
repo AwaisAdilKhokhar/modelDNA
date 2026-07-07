@@ -32,6 +32,10 @@ interactive family tree of 48 real Hub models reconstructed from weight
 evidence alone: hover any edge for the σ-curve, sample-cosine, and spectral
 evidence behind it. Regenerate it yourself with `python scripts/build_atlas.py`.
 
+**[🔬 Scan a model live](https://huggingface.co/spaces/AwaisAdilKhokhar/modelDNA)** —
+paste a Hub repo id into the hosted scanner and get a verdict in a minute or
+two, no install needed.
+
 ## Install
 
 ```
@@ -43,9 +47,12 @@ Python 3.10+. CPU only — no GPU or torch required.
 ## Quick start
 
 ```bash
-# build a local reference DB of known bases (fingerprints them from the Hub)
+# pull the prebuilt reference DB of known bases (~57 MB, seconds)
+modeldna db pull
+
+# …or fingerprint the seed list from the Hub yourself
 modeldna db build --limit 10   # quick smoke test, a few minutes
-modeldna db build              # full seed list — hours, resumable if interrupted
+modeldna db build              # full seed list — resumable if interrupted
 
 # scan a model against the DB
 modeldna scan mistralai/Mistral-7B-Instruct-v0.3
