@@ -30,3 +30,6 @@ benchmarks/*.log
 *.swp
 .DS_Store
 Thumbs.db
+
+# local debugging screenshots
+image.png
