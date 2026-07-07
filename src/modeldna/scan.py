@@ -78,7 +78,9 @@ def scan(
     source: ModelSource | None = None,
 ) -> ScanResult:
     """Scan a model against the reference DB and return a full result."""
-    db = db or ReferenceDB()
+    # explicit None check: ReferenceDB defines __len__, so an empty DB is
+    # falsy and `db or ReferenceDB()` would silently swap it for the default
+    db = db if db is not None else ReferenceDB()
     src = source or open_source(target, revision=revision)
     fp = extract_fingerprint(src, mode=mode, model_id=target, revision=revision)
     claims = read_claims(src)
