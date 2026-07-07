@@ -22,6 +22,7 @@ htmlcov/
 .modeldna/
 *.fp.json
 scans/
+benchmarks/*.log
 
 # Editors / OS
 .vscode/

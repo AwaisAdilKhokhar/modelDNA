@@ -39,7 +39,8 @@ Python 3.10+. CPU only — no GPU or torch required.
 
 ```bash
 # build a local reference DB of known bases (fingerprints them from the Hub)
-modeldna db build --limit 10
+modeldna db build --limit 10   # quick smoke test, a few minutes
+modeldna db build              # full seed list — hours, resumable if interrupted
 
 # scan a model against the DB
 modeldna scan mistralai/Mistral-7B-Instruct-v0.3
@@ -122,18 +123,52 @@ confidence.
 
 ## Reference DB
 
+The fastest way to a working DB is to pull a prebuilt one — fingerprints
+are small (~55 MB for the full seed list) and derived from public weights:
+
+```bash
+modeldna db pull                 # seconds; then a scan only fetches your suspect
+```
+
+`db pull` takes the latest published archive from this repo's GitHub
+releases (override with `--url` or `MODELDNA_DB_URL`; archives are produced
+by `modeldna db export` / the `refdb-release` workflow). To build it
+yourself instead:
+
 `modeldna db build` fingerprints a seed list of widely-forked bases (Llama,
 Qwen, Mistral, Gemma, Phi, DeepSeek, Yi, Falcon, OLMo, …) plus deliberate
 hard negatives — OpenLLaMA (same shapes as Llama, independently trained) and
 Pythia seed siblings. Gated repos (Llama, Gemma) need a Hugging Face token
-(`huggingface-cli login` or `HF_TOKEN`).
+with the license accepted on each gated org (`huggingface-cli login` or
+`HF_TOKEN`) — a read-only token is sufficient, no write scope needed.
+
+The seed list has been run against the live Hub: **37 of 41 entries
+indexed**, ~55 MB total. The 4 that don't index
+(`deepseek-ai/deepseek-llm-7b-base`, `internlm/internlm2-7b`,
+`openbmb/MiniCPM-2B-sft-bf16`, `openlm-research/open_llama_7b`) ship only
+PyTorch `.bin` checkpoints on the Hub, no safetensors — a hard limitation of
+the current safetensors-only I/O layer, not a transient failure. Fast mode
+plans every byte range it needs up front and fetches them concurrently
+(measured: a 7B model in ~2 min on an ordinary connection), so a full build
+is a coffee break, not an overnight job. If your connection drops mid-run,
+just rerun — `db build` skips already-indexed entries automatically. Two env
+knobs if you need them: `MODELDNA_HTTP_CONCURRENCY` (parallel range reads,
+default 32) and `MODELDNA_COALESCE_GAP` (merge nearby ranges into one
+request, default 64 KiB — raise it on high-latency, high-bandwidth links).
 
 ```bash
 modeldna db list                 # what's indexed
 modeldna db info Qwen/Qwen2.5-7B
 modeldna db add org/new-base --family my-family
 modeldna db remove org/old-base
+modeldna db export refdb.tar.gz  # package for publishing / air-gapped machines
+modeldna db pull --url refdb.tar.gz --overwrite
 ```
+
+There is also a manual `fingerprint` GitHub Actions workflow: give it Hub
+repo ids and it extracts fingerprints on a runner sitting next to the HF
+CDN (seconds per model) and uploads them as artifacts — useful for growing
+the DB or the benchmark without fetching through your own connection.
 
 The DB lives in `~/.modeldna/db` (override with `MODELDNA_DB`). Entries are
 gzipped JSON fingerprints plus a manifest — no weights are ever stored.
@@ -148,8 +183,33 @@ controls at the reporting threshold** — that last gate is the
 defamation-risk surface and is non-negotiable. Current results: AUROC 1.0,
 0 false positives, max calibration gap 0.045.
 
-Real-model LineageBench (verified Hub pairs, quantized/merged robustness
-suites) is the next milestone; the harness and metrics are already in place.
+**Real-model LineageBench** (`benchmarks/real_lineagebench.py`) runs the
+same gates on real Hub weights: 15 suspect models across 6 families whose
+parentage is corroborated by the publishing org's own documentation
+(fine-tunes, continued-pretrains, official instructs, a merge chain, a
+depth-upscale, a GPTQ quantized copy), each judged against all 8 candidate
+parents by the actual verdict engine, with 107 wrong-parent and
+cross-family comparisons as hard negatives. Results (2026-07-07):
+
+- **AUROC 1.0 · TPR@FPR1% 1.0 · 0 false positives at the 0.9 threshold** —
+  ship gates PASS. Weakest positive scored 0.9426 (gemma-2b-it); strongest
+  negative 0.6596: clean separation.
+- **Top-1 parent attribution: 13/13** on the gate pool — every derivative
+  traced to the right base among 8 candidates.
+- The two by-design limitation cases behaved exactly as documented: SOLAR
+  (depth-upscale) → honest `NO_MATCH` abstention; GPTQ (quantized-copy) →
+  abstained on packed int4 tensors while still ranking the true parent
+  first.
+- One caveat, reported not hidden: the merge-chain case (AlphaMonarch)
+  resolved to the correct family as `SAME_FAMILY_UNRESOLVED` rather than
+  `LIKELY_MERGE` — consistent with the stated v0.1 limitation that merges
+  are flagged, not attributed.
+
+The ground truth manifest (`benchmarks/lineagebench_pairs.json`), the
+fingerprint cache, and full per-pair results
+(`benchmarks/lineagebench_results.json`) are committed, so
+`python benchmarks/real_lineagebench.py --no-fetch` reproduces the numbers
+without touching the Hub.
 
 ## Limitations — read before citing a verdict
 
@@ -168,6 +228,11 @@ suites) is the next milestone; the harness and metrics are already in place.
   scope and stated so in every report.
 - Depth-upscaled / layer-surgery derivatives are detected as shape mismatches
   and reported, not resolved (alignment search planned for v0.3).
+- **Safetensors only.** Repos that ship exclusively PyTorch `.bin` /
+  `.pt` checkpoints (a handful of older or research releases —
+  `deepseek-llm-7b-base`, `internlm2-7b`, `open_llama_7b`, `MiniCPM-2B-sft`
+  among the seed list) can't be fingerprinted at all until `.bin` decoding is
+  added.
 
 ## Library use
 
