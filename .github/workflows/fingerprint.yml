@@ -1,0 +1,62 @@
+# Fingerprint Hub models from a runner that sits ~10 ms from the HF CDN,
+# instead of over a home connection. Feed it repo ids, download the
+# fingerprint artifacts (~1.5 MB each), and drop them into a reference DB
+# or benchmarks/lineagebench_cache/fingerprints/.
+#
+# Gated repos (Llama, Gemma) need an HF_TOKEN repo secret whose account has
+# accepted the licenses.
+name: fingerprint
+
+on:
+  workflow_dispatch:
+    inputs:
+      repos:
+        description: "Hub repo ids, space- or comma-separated"
+        required: true
+        type: string
+      mode:
+        description: "Extraction mode"
+        required: false
+        default: fast
+        type: choice
+        options: [fast, full]
+
+jobs:
+  fingerprint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+      - name: Fingerprint
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          MODE: ${{ inputs.mode }}
+        run: |
+          mkdir -p out
+          failures=0
+          for repo in $(echo "${{ inputs.repos }}" | tr ',' ' '); do
+            safe="${repo//\//__}"  # same naming as the reference DB / caches
+            flag=""
+            [ "$MODE" = "full" ] && flag="--full"
+            echo "::group::$repo"
+            if ! modeldna fingerprint "$repo" $flag -o "out/${safe}.json.gz"; then
+              echo "::error::fingerprint failed for $repo"
+              failures=$((failures + 1))
+            fi
+            echo "::endgroup::"
+          done
+          exit $failures
+      - name: Upload fingerprints
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fingerprints
+          path: out/*.json.gz
+          if-no-files-found: error

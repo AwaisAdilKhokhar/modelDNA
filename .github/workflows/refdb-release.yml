@@ -1,0 +1,64 @@
+# Build the full seed reference DB on a runner next to the HF CDN and
+# publish it as a GitHub release asset. End users then run
+# `modeldna db pull` (seconds, ~55 MB) instead of `db build` (fingerprints
+# 40+ models from the Hub themselves).
+#
+# Needs an HF_TOKEN repo secret with the gated licenses (Llama, Gemma)
+# accepted. 4 of the 41 seed models are known to fail (they ship only
+# PyTorch .bin weights, no safetensors) — the build step tolerates
+# failures and the gate below just checks we got a usable DB.
+name: refdb-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. refdb-2026-07-07)"
+        required: true
+        type: string
+      min_entries:
+        description: "Fail unless at least this many models indexed"
+        required: false
+        default: "30"
+        type: string
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    permissions:
+      contents: write # create the release
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+      - name: Build reference DB
+        continue-on-error: true # known .bin-only seed failures exit nonzero
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          MODELDNA_DB: ${{ github.workspace }}/refdb
+        run: modeldna db build
+      - name: Export archive
+        env:
+          MODELDNA_DB: ${{ github.workspace }}/refdb
+        run: |
+          modeldna db list
+          n=$(python -c "from modeldna.db.store import ReferenceDB; print(len(ReferenceDB()))")
+          echo "indexed $n models"
+          if [ "$n" -lt "${{ inputs.min_entries }}" ]; then
+            echo "::error::only $n entries (< ${{ inputs.min_entries }}); not publishing"
+            exit 1
+          fi
+          modeldna db export modeldna-refdb.tar.gz
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ inputs.tag }}" modeldna-refdb.tar.gz \
+            --title "Reference DB ${{ inputs.tag }}" \
+            --notes "Prebuilt base-model fingerprint DB. Install with: \`modeldna db pull\`"
