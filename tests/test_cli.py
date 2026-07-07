@@ -139,8 +139,10 @@ def test_explain_roundtrip(env):
     assert r.exit_code == 1
 
 
-def test_db_update_unconfigured(env, monkeypatch):
+def test_db_update_is_pull_alias(env, monkeypatch):
+    # `db update` now delegates to `db pull`; a bogus URL fails cleanly
+    # (schema-less non-path -> requests error, no network touched)
     monkeypatch.delenv("MODELDNA_DB_URL", raising=False)
-    r = runner.invoke(app, ["db", "update"])
-    assert r.exit_code == 4
-    assert "db build" in r.output
+    r = runner.invoke(app, ["db", "update", "--url", "definitely::not-an-archive"])
+    assert r.exit_code == 1
+    assert "error" in r.output

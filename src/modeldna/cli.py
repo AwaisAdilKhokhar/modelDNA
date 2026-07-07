@@ -326,22 +326,77 @@ def db_build(
         raise typer.Exit(1)
 
 
-@db_app.command("update")
-def db_update(db_path: Optional[Path] = typer.Option(None, "--db")):
-    """Refresh the DB from a published fingerprint dataset (when configured)."""
-    import os
+#: release asset published by .github/workflows/refdb-release.yml
+DEFAULT_DB_URL = (
+    "https://github.com/awaisbinadil/modeldna/releases/latest/download/modeldna-refdb.tar.gz"
+)
 
-    url = os.environ.get("MODELDNA_DB_URL")
-    if not url:
-        console.print(
-            "no published fingerprint dataset configured for v0.1.\n"
-            "Either set MODELDNA_DB_URL to a fingerprint dataset, or build the "
-            "DB locally:\n\n"
-            "  modeldna db build            # fingerprint the seed list from the Hub\n"
-            "  modeldna db add <repo_id>    # add individual bases\n"
-        )
-        raise typer.Exit(4)
-    _fail("remote DB sync is not implemented yet; use `modeldna db build`")
+
+@db_app.command("export")
+def db_export(
+    output: Path = typer.Argument(Path("modeldna-refdb.tar.gz"),
+                                  help="Archive path (.tar.gz)."),
+    db_path: Optional[Path] = typer.Option(None, "--db"),
+):
+    """Package the reference DB into an archive that `db pull` can consume."""
+    db = ReferenceDB(db_path)
+    if len(db) == 0:
+        _fail("reference DB is empty; nothing to export")
+    path = db.export_archive(output)
+    console.print(f"exported {len(db)} entries -> {path} "
+                  f"[dim]({path.stat().st_size / 1e6:.1f} MB)[/dim]")
+
+
+@db_app.command("pull")
+def db_pull(
+    url: Optional[str] = typer.Option(None, "--url", help="Archive URL or local "
+                                      "path; defaults to $MODELDNA_DB_URL, then "
+                                      "the latest GitHub release."),
+    overwrite: bool = typer.Option(False, "--overwrite", help="Replace entries "
+                                   "that already exist locally."),
+    db_path: Optional[Path] = typer.Option(None, "--db"),
+):
+    """Fetch a published reference DB instead of fingerprinting the seed list.
+
+    Pulling ~55 MB of prebuilt fingerprints takes seconds; after that a scan
+    only ever fetches one model from the Hub — the suspect.
+    """
+    import os
+    import tempfile
+
+    import requests
+
+    url = url or os.environ.get("MODELDNA_DB_URL") or DEFAULT_DB_URL
+    db = ReferenceDB(db_path)
+    try:
+        if Path(url).exists():
+            added, skipped = db.import_archive(url, overwrite=overwrite)
+        else:
+            with tempfile.TemporaryDirectory() as tmp:
+                archive = Path(tmp) / "refdb.tar.gz"
+                with requests.get(url, stream=True, timeout=120) as r:
+                    if r.status_code != 200:
+                        _fail(f"GET {url}: HTTP {r.status_code}"
+                              + (" (no release published yet?)"
+                                 if r.status_code == 404 else ""))
+                    with open(archive, "wb") as f:
+                        for chunk in r.iter_content(1 << 20):
+                            f.write(chunk)
+                added, skipped = db.import_archive(archive, overwrite=overwrite)
+    except (ValueError, OSError, requests.RequestException) as e:
+        _fail(str(e))
+    console.print(f"pulled {added} entries ({skipped} already present) · "
+                  f"{len(db)} total · db v{db.version}")
+
+
+@db_app.command("update")
+def db_update(
+    url: Optional[str] = typer.Option(None, "--url"),
+    overwrite: bool = typer.Option(False, "--overwrite"),
+    db_path: Optional[Path] = typer.Option(None, "--db"),
+):
+    """Alias for `db pull`."""
+    db_pull(url=url, overwrite=overwrite, db_path=db_path)
 
 
 if __name__ == "__main__":
