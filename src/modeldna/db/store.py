@@ -171,6 +171,59 @@ class ReferenceDB:
             raise KeyError(f"{model_id} not in reference DB")
         return Fingerprint.load(self.fp_dir / entry.file)
 
+    # -- publish / pull -----------------------------------------------------------
+
+    def export_archive(self, path: str | Path) -> Path:
+        """Package the manifest and all fingerprints into a .tar.gz.
+
+        Fingerprints are derived from public weights and small (~1.5 MB
+        each), so the whole DB ships as one release asset that
+        ``import_archive`` on another machine can merge in — end users then
+        only ever fetch one model from the Hub: their suspect.
+        """
+        import io
+        import tarfile
+
+        path = Path(path)
+        with tarfile.open(path, "w:gz") as tar:
+            data = json.dumps(self._load_manifest(), indent=2).encode()
+            info = tarfile.TarInfo(MANIFEST)
+            info.size = len(data)
+            tar.addfile(info, io.BytesIO(data))
+            for e in self.entries():
+                tar.add(self.fp_dir / e.file, arcname=f"fingerprints/{e.file}")
+        return path
+
+    def import_archive(self, path: str | Path, overwrite: bool = False) -> tuple[int, int]:
+        """Merge entries from an exported archive; returns (added, skipped).
+
+        Existing entries are kept unless ``overwrite``. Nothing is extracted
+        to disk from the archive directly — fingerprints are parsed in
+        memory and re-added through ``add``, so archive contents can't write
+        outside the DB.
+        """
+        import gzip
+        import tarfile
+
+        added = skipped = 0
+        with tarfile.open(path, "r:gz") as tar:
+            try:
+                manifest = json.loads(tar.extractfile(MANIFEST).read())
+            except KeyError:
+                raise ValueError(f"{path}: not a modeldna DB archive (no {MANIFEST})") from None
+            for d in manifest.get("entries", []):
+                entry = DBEntry.from_dict(d)
+                if self.get(entry.model_id) and not overwrite:
+                    skipped += 1
+                    continue
+                raw = tar.extractfile(f"fingerprints/{entry.file}").read()
+                if raw[:2] == b"\x1f\x8b":
+                    raw = gzip.decompress(raw)
+                fp = Fingerprint.from_dict(json.loads(raw))
+                self.add(fp, family=entry.family, meta=entry.meta, overwrite=overwrite)
+                added += 1
+        return added, skipped
+
     # -- candidate filtering ---------------------------------------------------------
 
     def candidates_for(self, sig: ArchSignature) -> list[DBEntry]:
