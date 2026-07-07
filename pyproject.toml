@@ -35,7 +35,7 @@ dev = ["pytest>=7.0", "ruff>=0.4"]
 modeldna = "modeldna.cli:app"
 
 [project.urls]
-Homepage = "https://github.com/awaisbinadil/modeldna"
+Homepage = "https://github.com/AwaisAdilKhokhar/modeldna"
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -251,7 +251,7 @@ print(evidence.sigma_r, evidence.pcs_cos_mean)
 ## Development
 
 ```bash
-git clone https://github.com/awaisbinadil/modeldna
+git clone https://github.com/AwaisAdilKhokhar/modeldna
 cd modeldna
 pip install -e .[dev]
 pytest -q

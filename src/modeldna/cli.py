@@ -328,7 +328,7 @@ def db_build(
 
 #: release asset published by .github/workflows/refdb-release.yml
 DEFAULT_DB_URL = (
-    "https://github.com/awaisbinadil/modeldna/releases/latest/download/modeldna-refdb.tar.gz"
+    "https://github.com/AwaisAdilKhokhar/modeldna/releases/latest/download/modeldna-refdb.tar.gz"
 )
 
 
