@@ -27,6 +27,11 @@ documented parentage at all, and every laundering controversy so far
 by hand. The detection methods are published and validated — modelDNA
 packages them into one command.
 
+**[🧬 Explore the Atlas](https://awaisadilkhokhar.github.io/modelDNA/)** — an
+interactive family tree of 48 real Hub models reconstructed from weight
+evidence alone: hover any edge for the σ-curve, sample-cosine, and spectral
+evidence behind it. Regenerate it yourself with `python scripts/build_atlas.py`.
+
 ## Install
 
 ```

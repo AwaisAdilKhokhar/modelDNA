@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>modelDNA Atlas — the weight-space family tree of open LLMs</title>
+<meta name="description" content="Lineage of open-weight LLMs reconstructed from weight evidence alone — no model cards, no metadata, just the weights.">
+<style>
+:root{
+  --plane:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink-2:#52514e;
+  --muted:#898781; --grid:#e1e0d9; --axis:#c3c2b7; --ring:rgba(11,11,11,.10);
+  --good:#0ca30c; --good-ink:#006300;
+  --g0:#2a78d6; --g1:#e34948; --g2:#008300; --g3:#eda100;
+  --g4:#4a3aa7; --g5:#e87ba4; --g6:#1baf7a; --g7:#898781;
+  --seq-lo:#cde2fb; --seq-hi:#0d366b;
+  --card:#ffffff; --shadow:0 10px 30px rgba(11,11,11,.10);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --plane:#0d0d0d; --surface:#1a1a19; --ink:#ffffff; --ink-2:#c3c2b7;
+    --muted:#898781; --grid:#2c2c2a; --axis:#383835; --ring:rgba(255,255,255,.12);
+    --good:#0ca30c; --good-ink:#0ca30c;
+    --g0:#3987e5; --g1:#e66767; --g2:#008300; --g3:#c98500;
+    --g4:#9085e9; --g5:#d55181; --g6:#199e70; --g7:#898781;
+    --seq-lo:#16233a; --seq-hi:#9ec5f4;
+    --card:#222221; --shadow:0 10px 30px rgba(0,0,0,.5);
+  }
+}
+:root[data-theme="light"]{
+  --plane:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink-2:#52514e;
+  --muted:#898781; --grid:#e1e0d9; --axis:#c3c2b7; --ring:rgba(11,11,11,.10);
+  --good:#0ca30c; --good-ink:#006300;
+  --g0:#2a78d6; --g1:#e34948; --g2:#008300; --g3:#eda100;
+  --g4:#4a3aa7; --g5:#e87ba4; --g6:#1baf7a; --g7:#898781;
+  --seq-lo:#cde2fb; --seq-hi:#0d366b;
+  --card:#ffffff; --shadow:0 10px 30px rgba(11,11,11,.10);
+}
+:root[data-theme="dark"]{
+  --plane:#0d0d0d; --surface:#1a1a19; --ink:#ffffff; --ink-2:#c3c2b7;
+  --muted:#898781; --grid:#2c2c2a; --axis:#383835; --ring:rgba(255,255,255,.12);
+  --good:#0ca30c; --good-ink:#0ca30c;
+  --g0:#3987e5; --g1:#e66767; --g2:#008300; --g3:#c98500;
+  --g4:#9085e9; --g5:#d55181; --g6:#199e70; --g7:#898781;
+  --seq-lo:#16233a; --seq-hi:#9ec5f4;
+  --card:#222221; --shadow:0 10px 30px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--plane);color:var(--ink);
+  font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;}
+code,.mono{font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;}
+a{color:inherit}
+.wrap{max-width:1160px;margin:0 auto;padding:0 24px;}
+
+header{padding:34px 0 10px}
+.brand{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.brand h1{margin:0;font-size:30px;font-weight:800;letter-spacing:-.02em}
+.brand h1 .dna{color:var(--g0)}
+.brand .atlas{font-family:ui-monospace,Consolas,monospace;font-size:12px;
+  letter-spacing:.24em;color:var(--ink-2);border:1px solid var(--axis);
+  padding:3px 9px;border-radius:3px;text-transform:uppercase}
+.brand .spacer{flex:1}
+.brand .gh{font-size:13.5px;font-weight:600;text-decoration:none;
+  border:1px solid var(--axis);border-radius:6px;padding:7px 13px;
+  background:var(--surface)}
+.brand .gh:hover{border-color:var(--ink-2)}
+.thesis{max-width:64ch;color:var(--ink-2);margin:12px 0 0;text-wrap:balance}
+.thesis b{color:var(--ink)}
+
+.eyebrow{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;
+  letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+section{margin:44px 0}
+section h2{margin:0 0 4px;font-size:21px;letter-spacing:-.01em;text-wrap:balance}
+section .sub{margin:0 0 18px;color:var(--ink-2);max-width:72ch}
+
+/* -- graph hero ------------------------------------------------------- */
+.stage{position:relative;background:var(--surface);border:1px solid var(--grid);
+  border-radius:10px;overflow:hidden}
+.stage svg{display:block;width:100%;height:auto}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;padding:12px 16px;
+  border-top:1px solid var(--grid);align-items:center}
+.legend .item{display:flex;align-items:center;gap:7px;font-size:12.5px;
+  color:var(--ink-2);cursor:default;padding:2px 4px;border-radius:4px}
+.legend .item:hover{background:var(--plane)}
+.legend .swatch{width:11px;height:11px;border-radius:50%;flex:none}
+.legend .sep{width:1px;height:16px;background:var(--grid);margin:0 2px}
+.legend .lineref{display:inline-block;width:22px;height:0;
+  border-top:2px solid var(--muted);vertical-align:middle}
+.legend .lineref.dash{border-top-style:dashed}
+
+.edge{fill:none} /* stroke set inline per edge — CSS here would override it */
+.edge.detected{stroke-opacity:.55}
+.edge.verified{stroke-opacity:.9}
+.edge.abstain{stroke:var(--muted);stroke-dasharray:3 5;stroke-opacity:.65}
+.node circle.core{stroke:var(--surface);stroke-width:1.6;cursor:pointer}
+.node circle.halo{fill:none;stroke-width:1.2;opacity:0;}
+.node.bench circle.halo{opacity:.85}
+.node text{font-family:ui-monospace,Consolas,monospace;font-size:10.5px;
+  fill:var(--ink-2);pointer-events:none}
+.faded{opacity:.13;transition:opacity .18s}
+.node,.edge{transition:opacity .18s}
+
+.detail{position:absolute;top:14px;right:14px;width:300px;max-width:70%;
+  background:var(--card);border:1px solid var(--grid);border-radius:9px;
+  box-shadow:var(--shadow);padding:14px 16px;font-size:13px;display:none;z-index:3}
+.detail.show{display:block}
+.detail h3{margin:0 0 2px;font-size:13.5px;word-break:break-all;
+  font-family:ui-monospace,Consolas,monospace}
+.detail .fam{color:var(--ink-2);font-size:12px;margin:0 0 8px}
+.detail table{width:100%;border-collapse:collapse;font-size:12.5px}
+.detail td{padding:2.5px 0;vertical-align:top}
+.detail td:first-child{color:var(--muted);padding-right:10px;white-space:nowrap}
+.detail .num{font-family:ui-monospace,Consolas,monospace;
+  font-variant-numeric:tabular-nums}
+.meter{display:flex;align-items:center;gap:7px}
+.meter .bar{height:5px;border-radius:2.5px;background:var(--grid);flex:1;
+  overflow:hidden}
+.meter .bar i{display:block;height:100%;background:var(--g0)}
+.detail .hint{color:var(--muted);font-size:11.5px;margin:8px 0 0}
+
+.chip{display:inline-block;font-family:ui-monospace,Consolas,monospace;
+  font-size:10.5px;letter-spacing:.06em;padding:2px 7px;border-radius:3px;
+  border:1px solid var(--axis);color:var(--ink-2);white-space:nowrap}
+.chip.pass{border-color:var(--good);color:var(--good-ink);font-weight:700}
+.chip.kind{border-style:dashed}
+
+/* -- matrix ------------------------------------------------------------ */
+.matrix-card{background:var(--surface);border:1px solid var(--grid);
+  border-radius:10px;padding:18px;position:relative}
+.matrix-flex{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+#matrix{border:1px solid var(--grid);cursor:crosshair;max-width:100%;
+  image-rendering:pixelated}
+.matrix-side{flex:1;min-width:230px;font-size:13px;color:var(--ink-2)}
+.matrix-side .scale{display:flex;align-items:center;gap:8px;margin:10px 0}
+.matrix-side .ramp{height:10px;width:150px;border-radius:5px;
+  background:linear-gradient(90deg,var(--seq-lo),var(--seq-hi))}
+.matrix-side .mono{font-size:11.5px}
+#cellTip{margin-top:12px;padding:10px 12px;border:1px solid var(--grid);
+  border-radius:7px;background:var(--card);font-size:12.5px;min-height:58px}
+#cellTip .num{font-family:ui-monospace,Consolas,monospace}
+
+/* -- scoreboard --------------------------------------------------------- */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+  gap:12px;margin-bottom:18px}
+.tile{background:var(--surface);border:1px solid var(--grid);border-radius:9px;
+  padding:14px 16px}
+.tile .lbl{font-family:ui-monospace,Consolas,monospace;font-size:10.5px;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.tile .val{font-size:30px;font-weight:800;letter-spacing:-.02em;margin:2px 0}
+.tile .note{font-size:12px;color:var(--ink-2)}
+.tbl-wrap{overflow-x:auto;background:var(--surface);
+  border:1px solid var(--grid);border-radius:10px}
+table.pairs{border-collapse:collapse;width:100%;font-size:13px;min-width:720px}
+.pairs th{font-family:ui-monospace,Consolas,monospace;font-size:10.5px;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+  text-align:left;padding:11px 14px;border-bottom:1px solid var(--grid)}
+.pairs td{padding:9px 14px;border-bottom:1px solid var(--grid);vertical-align:middle}
+.pairs tr:last-child td{border-bottom:none}
+.pairs td.mono{font-size:12.5px}
+.pairs .num{font-family:ui-monospace,Consolas,monospace;
+  font-variant-numeric:tabular-nums}
+.pairs .arrow{color:var(--muted)}
+.ok{color:var(--good-ink);font-weight:700}
+.dim{color:var(--muted)}
+
+footer{margin:56px 0 40px;padding-top:18px;border-top:1px solid var(--grid);
+  color:var(--ink-2);font-size:13px}
+footer .repro{font-family:ui-monospace,Consolas,monospace;font-size:12px;
+  background:var(--surface);border:1px solid var(--grid);border-radius:7px;
+  padding:10px 14px;margin:12px 0;overflow-x:auto;white-space:pre}
+footer p{max-width:88ch}
+@media (prefers-reduced-motion: reduce){ .drift{animation:none !important} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="brand">
+    <h1>model<span class="dna">DNA</span></h1>
+    <span class="atlas">Atlas</span>
+    <span class="spacer"></span>
+    <a class="gh" href="https://github.com/AwaisAdilKhokhar/modelDNA">Star on GitHub &rarr;</a>
+  </div>
+  <p class="thesis"><b>The family tree of open-weight LLMs, reconstructed from the
+  weights alone.</b> No model cards were read. Every edge below is statistical
+  evidence computed from ~100&ndash;300&nbsp;MB of sampled weights per model &mdash;
+  &sigma;-curves, seeded weight samples, norm vectors, and singular-value spectra.</p>
+</header>
+
+<section>
+  <p class="eyebrow">specimen map</p>
+  <h2>The constellation</h2>
+  <p class="sub">Each dot is a model on the Hugging Face Hub; size tracks parameter
+  count. A solid line means the calibrated probability of shared lineage is
+  &ge;&nbsp;0.90 &mdash; thicker when the pair's parentage is corroborated by the
+  publisher's own documentation. Hover to inspect the evidence; click to pin.</p>
+  <div class="stage" id="stage">
+    <svg id="graph" viewBox="0 0 1000 620" role="img"
+         aria-label="Force-directed graph of model lineage"></svg>
+    <div class="detail" id="detail"></div>
+    <div class="legend" id="legend"></div>
+  </div>
+</section>
+
+<section>
+  <p class="eyebrow">pairwise evidence</p>
+  <h2>Similarity matrix</h2>
+  <p class="sub">Calibrated P(shared lineage) for every depth-compatible pair,
+  ordered by family. The bright blocks are families rediscovered from weights;
+  the dark off-diagonal sea is why the false-positive rate is zero. Hover any
+  cell for the pair behind it.</p>
+  <div class="matrix-card">
+    <div class="matrix-flex">
+      <canvas id="matrix" width="640" height="640"></canvas>
+      <div class="matrix-side">
+        <div><b id="mCount"></b> models &middot; <b id="mPairs"></b> comparable pairs</div>
+        <div class="scale"><span class="mono">0</span><div class="ramp"></div>
+          <span class="mono">1</span><span>&nbsp;P(shared lineage)</span></div>
+        <div class="mono dim">blank &nbsp;=&nbsp; different depth, not comparable</div>
+        <div id="cellTip"><span class="dim">hover the matrix&hellip;</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <p class="eyebrow">ground truth</p>
+  <h2>LineageBench &mdash; verified against the publishers' own records</h2>
+  <p class="sub">Real Hub models whose parentage is documented by the publishing
+  org, judged blind against all candidate parents by the actual verdict engine.
+  Wrong-parent and cross-family comparisons serve as hard negatives.</p>
+  <div class="tiles" id="tiles"></div>
+  <div class="tbl-wrap"><table class="pairs" id="pairs"></table></div>
+</section>
+
+<footer>
+  <p><b>Statistical evidence, not proof.</b> Every relationship shown is a statement
+  of statistical consistency between weight fingerprints &mdash; never an accusation.
+  Merges are flagged but not attributed; distillation is invisible to weight
+  forensics by construction; documented limitations (depth surgery, packed
+  quantization) are shown as honest abstentions, not guesses.</p>
+  <div class="repro">pip install modeldna
+modeldna db pull                  # prebuilt reference fingerprints, seconds
+modeldna scan org/suspect-model   # ~2 min for a 7B, ~300 MB of traffic
+python scripts/build_atlas.py     # regenerate this page</div>
+  <p>Built with <a href="https://github.com/AwaisAdilKhokhar/modelDNA">modelDNA</a>
+  &mdash; forensic lineage detection for open-weight LLMs.</p>
+</footer>
+
+</div>
+<script id="atlas-data" type="application/json">/*__ATLAS_DATA__*/</script>
+<script>
+const D = JSON.parse(document.getElementById('atlas-data').textContent);
+const css = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim();
+const GC = i => css('--g' + Math.min(i, 7));
+const groupColor = n => n.group >= 0 && D.groups[n.group] !== 'Other' ? GC(n.group) : css('--g7');
+
+/* ---------------- graph ---------------- */
+const svg = document.getElementById('graph');
+const W = 1000, H = 620, CX = W/2, CY = H/2;
+const px = n => CX + n.x * (W/2 - 90);
+const py = n => CY + n.y * (H/2 - 60);
+const R = n => 4.5 + 3.4 * Math.log10(1 + (n.params || 0.1) * 4);
+const NS = 'http://www.w3.org/2000/svg';
+const el = (t, a) => { const e = document.createElementNS(NS, t);
+  for (const k in a) e.setAttribute(k, a[k]); return e; };
+
+const edgeLayer = el('g', {}), nodeLayer = el('g', {});
+svg.appendChild(edgeLayer); svg.appendChild(nodeLayer);
+
+const edgeEls = D.edges.map(e => {
+  const a = D.nodes[e.a], b = D.nodes[e.b];
+  const cls = e.p == null ? 'abstain' : (e.verified ? 'verified' : 'detected');
+  const ln = el('line', { x1: px(a), y1: py(a), x2: px(b), y2: py(b),
+    class: 'edge ' + cls, 'stroke-width': e.verified && e.p != null ? 2.1 : 1.2 });
+  if (e.p != null) ln.setAttribute('stroke', groupColor(D.nodes[e.child ?? e.a]));
+  edgeLayer.appendChild(ln); return ln;
+});
+
+const LABEL_MIN_B = 6.5;   // label the big anchors so the map reads unaided
+const nodeEls = D.nodes.map((n, i) => {
+  const g = el('g', { class: 'node' + (n.bench ? ' bench' : ''), 'data-i': i });
+  const halo = el('circle', { class: 'halo', cx: px(n), cy: py(n), r: R(n) + 3.2,
+    stroke: groupColor(n), 'stroke-dasharray': '2.5 2.5' });
+  const core = el('circle', { class: 'core', cx: px(n), cy: py(n), r: R(n),
+    fill: groupColor(n), tabindex: 0 });
+  g.appendChild(halo); g.appendChild(core);
+  if ((n.params >= LABEL_MIN_B && n.ref) || n.id.includes('SOLAR')) {
+    const t = el('text', { x: px(n) + R(n) + 5, y: py(n) + 3.5 });
+    t.textContent = n.id.split('/').pop();
+    g.appendChild(t);
+  }
+  nodeLayer.appendChild(g); return g;
+});
+
+const adj = D.nodes.map(() => new Set());
+D.edges.forEach((e, k) => { adj[e.a].add(k); adj[e.b].add(k); });
+
+const detail = document.getElementById('detail');
+let pinned = null;
+const fmtSignal = { sigma_r: 'σ-curve r', vector_cos: 'vector cos',
+  pcs_cos: 'PCS cos', spectra_r: 'spectra r' };
+
+function showNode(i) {
+  const n = D.nodes[i];
+  const partners = [...adj[i]].map(k => D.edges[k])
+    .filter(e => e.p != null).sort((x, y) => y.p - x.p).slice(0, 3);
+  let rel = partners.map(e => {
+    const o = D.nodes[e.a === i ? e.b : e.a];
+    return `<tr><td class="num">${e.p.toFixed(3)}</td>
+      <td class="mono">${o.id}${e.verified ? ' <span class="chip kind">' + e.kind + '</span>' : ''}</td></tr>`;
+  }).join('');
+  detail.innerHTML = `<h3>${n.id}</h3>
+    <p class="fam"><span class="swatch" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${groupColor(n)}"></span>
+    ${n.family} &middot; ${n.type || '?'} &middot; L${n.layers} &middot; ~${n.params}B params</p>
+    <table>
+      ${n.verdict ? `<tr><td>bench verdict</td><td><span class="chip">${n.verdict}</span></td></tr>` : ''}
+      ${n.kind ? `<tr><td>derivation</td><td><span class="chip kind">${n.kind}</span></td></tr>` : ''}
+      ${rel ? `<tr><td>strongest links</td><td></td></tr>${rel}` : '<tr><td>links</td><td class="dim">none above 0.90</td></tr>'}
+    </table>
+    <p class="hint">${pinned === i ? 'click elsewhere to unpin' : 'click to pin'}</p>`;
+  detail.classList.add('show');
+  nodeEls.forEach((g, j) => g.classList.toggle('faded',
+    j !== i && ![...adj[i]].some(k => D.edges[k].a === j || D.edges[k].b === j)));
+  edgeEls.forEach((ln, k) => ln.classList.toggle('faded', !adj[i].has(k)));
+}
+function clearHL() {
+  detail.classList.remove('show');
+  nodeEls.forEach(g => g.classList.remove('faded'));
+  edgeEls.forEach(ln => ln.classList.remove('faded'));
+}
+nodeEls.forEach((g, i) => {
+  g.addEventListener('pointerenter', () => { if (pinned === null) showNode(i); });
+  g.addEventListener('pointerleave', () => { if (pinned === null) clearHL(); });
+  g.addEventListener('click', ev => {
+    ev.stopPropagation();
+    pinned = (pinned === i) ? null : i;
+    pinned === null ? clearHL() : showNode(i);
+  });
+});
+svg.addEventListener('click', () => { pinned = null; clearHL(); });
+
+/* legend */
+const legend = document.getElementById('legend');
+D.groups.forEach((gname, gi) => {
+  const item = document.createElement('span');
+  item.className = 'item';
+  item.innerHTML = `<span class="swatch" style="background:${gname === 'Other' ? css('--g7') : GC(gi)}"></span>${gname}`;
+  item.addEventListener('pointerenter', () => {
+    nodeEls.forEach((g, j) => g.classList.toggle('faded', D.nodes[j].group !== gi));
+    edgeEls.forEach((ln, k) => { const e = D.edges[k];
+      ln.classList.toggle('faded',
+        D.nodes[e.a].group !== gi && D.nodes[e.b].group !== gi); });
+  });
+  item.addEventListener('pointerleave', () => { if (pinned === null) clearHL(); });
+  legend.appendChild(item);
+});
+legend.insertAdjacentHTML('beforeend',
+  `<span class="sep"></span>
+   <span class="item"><span class="lineref"></span>&nbsp;detected lineage (P &ge; 0.90)</span>
+   <span class="item"><span class="lineref dash"></span>&nbsp;documented, tool abstains</span>
+   <span class="item"><svg width="18" height="14"><circle cx="8" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-dasharray="2.5 2.5"/></svg>&nbsp;LineageBench specimen</span>`);
+
+/* ambient drift */
+const drift = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (drift) {
+  const phase = D.nodes.map((_, i) => i * 2.4);
+  let t0 = performance.now();
+  (function tick(t) {
+    const s = (t - t0) / 1000;
+    nodeEls.forEach((g, i) => {
+      const dx = Math.sin(s * .5 + phase[i]) * 2.2,
+            dy = Math.cos(s * .38 + phase[i] * 1.7) * 2.2;
+      g.setAttribute('transform', `translate(${dx},${dy})`);
+      [...adj[i]].forEach(k => {
+        const e = D.edges[k], ln = edgeEls[k];
+        if (e.a === i) { ln.setAttribute('x1', px(D.nodes[i]) + dx); ln.setAttribute('y1', py(D.nodes[i]) + dy); }
+        else { ln.setAttribute('x2', px(D.nodes[i]) + dx); ln.setAttribute('y2', py(D.nodes[i]) + dy); }
+      });
+    });
+    requestAnimationFrame(tick);
+  })(t0);
+}
+
+/* ---------------- matrix ---------------- */
+const cv = document.getElementById('matrix'), ctx = cv.getContext('2d');
+const N = D.nodes.length, SIZE = 640, cell = SIZE / N;
+const dpr = window.devicePixelRatio || 1;
+cv.width = SIZE * dpr; cv.height = SIZE * dpr;
+cv.style.width = 'min(' + SIZE + 'px, 100%)';
+cv.style.height = 'auto'; cv.style.aspectRatio = '1 / 1';
+ctx.scale(dpr, dpr);
+function hex2rgb(h) { h = h.replace('#', '');
+  return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); }
+function ramp(t) {
+  const lo = hex2rgb(css('--seq-lo')), hi = hex2rgb(css('--seq-hi'));
+  t = Math.pow(Math.max(0, Math.min(1, t)), 1.6);   // stretch the high end
+  return `rgb(${lo.map((l, i) => Math.round(l + (hi[i] - l) * t)).join(',')})`;
+}
+function drawMatrix() {
+  ctx.clearRect(0, 0, SIZE, SIZE);
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+    const p = i === j ? 1 : (D.matrix[i][j]);
+    if (p == null) continue;
+    ctx.fillStyle = ramp(p);
+    ctx.fillRect(j * cell, i * cell, Math.ceil(cell), Math.ceil(cell));
+  }
+  // hairline separators between groups
+  ctx.strokeStyle = css('--axis'); ctx.lineWidth = 1;
+  for (let i = 1; i < N; i++) if (D.nodes[i].group !== D.nodes[i - 1].group) {
+    ctx.beginPath(); ctx.moveTo(0, i * cell); ctx.lineTo(SIZE, i * cell);
+    ctx.moveTo(i * cell, 0); ctx.lineTo(i * cell, SIZE); ctx.stroke();
+  }
+}
+drawMatrix();
+new MutationObserver(drawMatrix).observe(document.documentElement,
+  { attributes: true, attributeFilter: ['data-theme'] });
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', drawMatrix);
+
+document.getElementById('mCount').textContent = N;
+document.getElementById('mPairs').textContent =
+  D.matrix.flat().filter(v => v != null).length / 2;
+const tip = document.getElementById('cellTip');
+cv.addEventListener('pointermove', ev => {
+  const r = cv.getBoundingClientRect();
+  const j = Math.floor((ev.clientX - r.left) / r.width * N);
+  const i = Math.floor((ev.clientY - r.top) / r.height * N);
+  if (i < 0 || j < 0 || i >= N || j >= N) return;
+  const p = i === j ? null : D.matrix[i][j];
+  tip.innerHTML = `<div class="mono">${D.nodes[i].id}</div>
+    <div class="mono dim">&times; ${D.nodes[j].id}</div>
+    <div style="margin-top:4px">${i === j ? '<span class="dim">self</span>'
+      : p == null ? '<span class="dim">different depth &mdash; not comparable</span>'
+      : `P(shared lineage) = <b class="num">${p.toFixed(3)}</b>`}</div>`;
+});
+cv.addEventListener('pointerleave', () => {
+  tip.innerHTML = '<span class="dim">hover the matrix&hellip;</span>'; });
+
+/* ---------------- scoreboard ---------------- */
+const S = D.bench.summary || {};
+const f2 = v => v == null ? '—' : Number(v).toFixed(2);
+const tiles = [
+  ['AUROC', f2(S.auroc), 'gate: ≥ 0.99', S.auroc >= 0.99],
+  ['TPR @ FPR 1%', f2(S.tpr_at_fpr_1pct), 'gate: ≥ 0.95', S.tpr_at_fpr_1pct >= 0.95],
+  ['false positives @ 0.9', S['false_positives_at_0.9'],
+    `across ${S.n_hard_negative_pairs} hard negatives`, S['false_positives_at_0.9'] === 0],
+  ['top-1 attribution', S.top1_attribution_accuracy != null
+    ? Math.round(S.top1_attribution_accuracy * 15) + ' / 15' : '—',
+    'incl. 2 by-design abstentions', null],
+];
+document.getElementById('tiles').innerHTML = tiles.map(([l, v, n, pass]) =>
+  `<div class="tile"><div class="lbl">${l}</div>
+   <div class="val">${v}</div>
+   <div class="note">${n} ${pass === true ? '<span class="chip pass">PASS</span>' : ''}</div></div>`
+).join('');
+
+const rows = (D.bench.attribution || []).map(r => `
+  <tr>
+    <td class="mono">${r.suspect}</td>
+    <td class="arrow">&rarr;</td>
+    <td class="mono">${r.true_parent}</td>
+    <td><span class="chip kind">${r.kind}</span></td>
+    <td class="num">${r.score_vs_true_parent.toFixed(3)}</td>
+    <td><span class="chip">${r.verdict}</span></td>
+    <td>${r.top1_correct ? '<span class="ok">&#10003;</span>'
+        : '<span class="dim" title="abstained by design">abstain</span>'}</td>
+  </tr>`).join('');
+document.getElementById('pairs').innerHTML = `
+  <thead><tr><th>suspect</th><th></th><th>documented parent</th><th>kind</th>
+  <th>P vs parent</th><th>verdict</th><th>top-1</th></tr></thead>
+  <tbody>${rows}</tbody>`;
+</script>
+</body>
+</html>
