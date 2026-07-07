@@ -72,10 +72,14 @@ section{margin:44px 0}
 section h2{margin:0 0 4px;font-size:21px;letter-spacing:-.01em;text-wrap:balance}
 section .sub{margin:0 0 18px;color:var(--ink-2);max-width:72ch}
 
-/* -- graph hero ------------------------------------------------------- */
+/* -- 3-D constellation -------------------------------------------------- */
 .stage{position:relative;background:var(--surface);border:1px solid var(--grid);
   border-radius:10px;overflow:hidden}
-.stage svg{display:block;width:100%;height:auto}
+#graph3d{display:block;width:100%;cursor:grab;touch-action:none}
+#graph3d.dragging{cursor:grabbing}
+.controls{position:absolute;left:14px;top:12px;z-index:2;
+  font-family:ui-monospace,Consolas,monospace;font-size:11px;
+  letter-spacing:.08em;color:var(--muted);pointer-events:none;user-select:none}
 .legend{display:flex;flex-wrap:wrap;gap:6px 14px;padding:12px 16px;
   border-top:1px solid var(--grid);align-items:center}
 .legend .item{display:flex;align-items:center;gap:7px;font-size:12.5px;
@@ -86,18 +90,6 @@ section .sub{margin:0 0 18px;color:var(--ink-2);max-width:72ch}
 .legend .lineref{display:inline-block;width:22px;height:0;
   border-top:2px solid var(--muted);vertical-align:middle}
 .legend .lineref.dash{border-top-style:dashed}
-
-.edge{fill:none} /* stroke set inline per edge — CSS here would override it */
-.edge.detected{stroke-opacity:.55}
-.edge.verified{stroke-opacity:.9}
-.edge.abstain{stroke:var(--muted);stroke-dasharray:3 5;stroke-opacity:.65}
-.node circle.core{stroke:var(--surface);stroke-width:1.6;cursor:pointer}
-.node circle.halo{fill:none;stroke-width:1.2;opacity:0;}
-.node.bench circle.halo{opacity:.85}
-.node text{font-family:ui-monospace,Consolas,monospace;font-size:10.5px;
-  fill:var(--ink-2);pointer-events:none}
-.faded{opacity:.13;transition:opacity .18s}
-.node,.edge{transition:opacity .18s}
 
 .detail{position:absolute;top:14px;right:14px;width:300px;max-width:70%;
   background:var(--card);border:1px solid var(--grid);border-radius:9px;
@@ -111,10 +103,6 @@ section .sub{margin:0 0 18px;color:var(--ink-2);max-width:72ch}
 .detail td:first-child{color:var(--muted);padding-right:10px;white-space:nowrap}
 .detail .num{font-family:ui-monospace,Consolas,monospace;
   font-variant-numeric:tabular-nums}
-.meter{display:flex;align-items:center;gap:7px}
-.meter .bar{height:5px;border-radius:2.5px;background:var(--grid);flex:1;
-  overflow:hidden}
-.meter .bar i{display:block;height:100%;background:var(--g0)}
 .detail .hint{color:var(--muted);font-size:11.5px;margin:8px 0 0}
 
 .chip{display:inline-block;font-family:ui-monospace,Consolas,monospace;
@@ -127,7 +115,7 @@ section .sub{margin:0 0 18px;color:var(--ink-2);max-width:72ch}
 .matrix-card{background:var(--surface);border:1px solid var(--grid);
   border-radius:10px;padding:18px;position:relative}
 .matrix-flex{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
-#matrix{border:1px solid var(--grid);cursor:crosshair;max-width:100%;
+#matrix{border:1px solid var(--grid);cursor:crosshair;
   image-rendering:pixelated}
 .matrix-side{flex:1;min-width:230px;font-size:13px;color:var(--ink-2)}
 .matrix-side .scale{display:flex;align-items:center;gap:8px;margin:10px 0}
@@ -168,7 +156,6 @@ footer .repro{font-family:ui-monospace,Consolas,monospace;font-size:12px;
   background:var(--surface);border:1px solid var(--grid);border-radius:7px;
   padding:10px 14px;margin:12px 0;overflow-x:auto;white-space:pre}
 footer p{max-width:88ch}
-@media (prefers-reduced-motion: reduce){ .drift{animation:none !important} }
 </style>
 </head>
 <body>
@@ -193,10 +180,12 @@ footer p{max-width:88ch}
   <p class="sub">Each dot is a model on the Hugging Face Hub; size tracks parameter
   count. A solid line means the calibrated probability of shared lineage is
   &ge;&nbsp;0.90 &mdash; thicker when the pair's parentage is corroborated by the
-  publisher's own documentation. Hover to inspect the evidence; click to pin.</p>
+  publisher's own documentation. Drag to orbit, scroll to zoom, hover to inspect,
+  click to pin.</p>
   <div class="stage" id="stage">
-    <svg id="graph" viewBox="0 0 1000 620" role="img"
-         aria-label="Force-directed graph of model lineage"></svg>
+    <canvas id="graph3d" role="img"
+            aria-label="Rotatable 3-D graph of model lineage"></canvas>
+    <div class="controls">drag&nbsp;=&nbsp;orbit&nbsp;&middot;&nbsp;scroll&nbsp;=&nbsp;zoom</div>
     <div class="detail" id="detail"></div>
     <div class="legend" id="legend"></div>
   </div>
@@ -255,90 +244,190 @@ const css = k => getComputedStyle(document.documentElement).getPropertyValue(k).
 const GC = i => css('--g' + Math.min(i, 7));
 const groupColor = n => n.group >= 0 && D.groups[n.group] !== 'Other' ? GC(n.group) : css('--g7');
 
-/* ---------------- graph ---------------- */
-const svg = document.getElementById('graph');
-const W = 1000, H = 620, CX = W/2, CY = H/2;
-const px = n => CX + n.x * (W/2 - 90);
-const py = n => CY + n.y * (H/2 - 60);
-const R = n => 4.5 + 3.4 * Math.log10(1 + (n.params || 0.1) * 4);
-const NS = 'http://www.w3.org/2000/svg';
-const el = (t, a) => { const e = document.createElementNS(NS, t);
-  for (const k in a) e.setAttribute(k, a[k]); return e; };
-
-const edgeLayer = el('g', {}), nodeLayer = el('g', {});
-svg.appendChild(edgeLayer); svg.appendChild(nodeLayer);
-
-const edgeEls = D.edges.map(e => {
-  const a = D.nodes[e.a], b = D.nodes[e.b];
-  const cls = e.p == null ? 'abstain' : (e.verified ? 'verified' : 'detected');
-  const ln = el('line', { x1: px(a), y1: py(a), x2: px(b), y2: py(b),
-    class: 'edge ' + cls, 'stroke-width': e.verified && e.p != null ? 2.1 : 1.2 });
-  if (e.p != null) ln.setAttribute('stroke', groupColor(D.nodes[e.child ?? e.a]));
-  edgeLayer.appendChild(ln); return ln;
-});
-
-const LABEL_MIN_B = 6.5;   // label the big anchors so the map reads unaided
-const nodeEls = D.nodes.map((n, i) => {
-  const g = el('g', { class: 'node' + (n.bench ? ' bench' : ''), 'data-i': i });
-  const halo = el('circle', { class: 'halo', cx: px(n), cy: py(n), r: R(n) + 3.2,
-    stroke: groupColor(n), 'stroke-dasharray': '2.5 2.5' });
-  const core = el('circle', { class: 'core', cx: px(n), cy: py(n), r: R(n),
-    fill: groupColor(n), tabindex: 0 });
-  g.appendChild(halo); g.appendChild(core);
-  if ((n.params >= LABEL_MIN_B && n.ref) || n.id.includes('SOLAR')) {
-    const t = el('text', { x: px(n) + R(n) + 5, y: py(n) + 3.5 });
-    t.textContent = n.id.split('/').pop();
-    g.appendChild(t);
-  }
-  nodeLayer.appendChild(g); return g;
-});
-
+/* ---------------- 3-D constellation ---------------- */
+const stage = document.getElementById('stage');
+const cvG = document.getElementById('graph3d');
+const gtx = cvG.getContext('2d');
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const adj = D.nodes.map(() => new Set());
 D.edges.forEach((e, k) => { adj[e.a].add(k); adj[e.b].add(k); });
+const isNeighbor = (a, i) =>
+  [...adj[a]].some(k => D.edges[k].a === i || D.edges[k].b === i);
+const R = n => 4 + 3.2 * Math.log10(1 + (n.params || .1) * 4);
+const LABEL_MIN_B = 6.5;
 
+let yaw = .7, pitch = .26, zoom = 1;
+let hoverI = -1, pinnedI = -1, hlGroup = -1, dragging = false;
+let vw = 0, vh = 0;
+const dprG = window.devicePixelRatio || 1;
+function resizeG() {
+  vw = stage.clientWidth;
+  vh = Math.round(Math.min(660, Math.max(430, vw * .6)));
+  cvG.width = vw * dprG; cvG.height = vh * dprG;
+  cvG.style.height = vh + 'px';
+  gtx.setTransform(dprG, 0, 0, dprG, 0, 0);
+}
+resizeG(); addEventListener('resize', resizeG);
+
+const P = new Array(D.nodes.length);   // projected {x, y, s, z}
+function projectAll() {
+  const cy = Math.cos(yaw), sy = Math.sin(yaw);
+  const cp = Math.cos(pitch), sp = Math.sin(pitch);
+  const scale = Math.min(vw, vh * 1.35) * .42 * zoom, F = 3.1;
+  for (let i = 0; i < D.nodes.length; i++) {
+    const n = D.nodes[i];
+    let x = n.x * cy + n.z * sy, z = -n.x * sy + n.z * cy;
+    const y = n.y * cp - z * sp; z = n.y * sp + z * cp;
+    const s = F / (F + z);
+    P[i] = { x: vw / 2 + x * s * scale, y: vh / 2 + y * s * scale, s, z };
+  }
+}
+const depthA = z => .4 + .6 * (1 - (z + 1) / 2);   // near = opaque, far = faint
+function nodeKeep(i) {
+  const a = pinnedI >= 0 ? pinnedI : hoverI;
+  if (a >= 0) return (i === a || isNeighbor(a, i)) ? 1 : .1;
+  if (hlGroup >= 0) return D.nodes[i].group === hlGroup ? 1 : .12;
+  return 1;
+}
+function edgeKeep(k) {
+  const a = pinnedI >= 0 ? pinnedI : hoverI;
+  if (a >= 0) return adj[a].has(k) ? 1 : .05;
+  if (hlGroup >= 0) {
+    const e = D.edges[k];
+    return (D.nodes[e.a].group === hlGroup || D.nodes[e.b].group === hlGroup) ? 1 : .05;
+  }
+  return 1;
+}
+function draw() {
+  projectAll();
+  gtx.clearRect(0, 0, vw, vh);
+  const sizeK = Math.min(vw, 1000) / 1000;
+  // edges, far to near
+  D.edges.map((e, k) => ({ e, k, z: (P[e.a].z + P[e.b].z) / 2 }))
+    .sort((a, b) => b.z - a.z)
+    .forEach(({ e, k, z }) => {
+      const a = P[e.a], b = P[e.b];
+      gtx.globalAlpha = (e.p == null ? .55 : e.verified ? .85 : .5)
+        * depthA(z) * edgeKeep(k);
+      gtx.strokeStyle = e.p == null ? css('--muted')
+        : groupColor(D.nodes[e.child ?? e.a]);
+      gtx.lineWidth = (e.verified && e.p != null ? 2 : 1.1) * ((a.s + b.s) / 2) * sizeK;
+      gtx.setLineDash(e.p == null ? [3, 5] : []);
+      gtx.beginPath(); gtx.moveTo(a.x, a.y); gtx.lineTo(b.x, b.y); gtx.stroke();
+    });
+  gtx.setLineDash([]);
+  // nodes, far to near
+  const order = D.nodes.map((_, i) => i).sort((i, j) => P[j].z - P[i].z);
+  gtx.font = '10.5px ui-monospace, Consolas, monospace';
+  for (const i of order) {
+    const n = D.nodes[i], p = P[i];
+    const r = R(n) * p.s * sizeK * Math.sqrt(zoom);
+    const keep = nodeKeep(i), da = depthA(p.z);
+    gtx.globalAlpha = da * keep;
+    if (n.bench) {                       // dashed specimen halo
+      gtx.strokeStyle = groupColor(n); gtx.lineWidth = 1.2;
+      gtx.setLineDash([2.5, 2.5]);
+      gtx.beginPath(); gtx.arc(p.x, p.y, r + 3.2, 0, 7); gtx.stroke();
+      gtx.setLineDash([]);
+    }
+    gtx.fillStyle = groupColor(n);
+    gtx.beginPath(); gtx.arc(p.x, p.y, r, 0, 7); gtx.fill();
+    gtx.strokeStyle = css('--surface'); gtx.lineWidth = 1.4;
+    gtx.beginPath(); gtx.arc(p.x, p.y, r, 0, 7); gtx.stroke();
+    if (i === pinnedI || i === hoverI) {
+      gtx.strokeStyle = css('--ink'); gtx.lineWidth = 1.6;
+      gtx.beginPath(); gtx.arc(p.x, p.y, r + 1.8, 0, 7); gtx.stroke();
+    }
+    const label = (n.params >= LABEL_MIN_B && n.ref) || n.id.includes('SOLAR')
+      || i === pinnedI || i === hoverI;
+    if (label) {
+      gtx.globalAlpha = Math.pow(da, 2.2) * keep;   // far-side labels recede
+      gtx.fillStyle = css('--ink-2');
+      gtx.fillText(n.id.split('/').pop(), p.x + r + 5, p.y + 3.5);
+    }
+  }
+  gtx.globalAlpha = 1;
+}
+
+let last = performance.now();
+(function frame(t) {
+  const dt = Math.min(50, t - last); last = t;
+  if (!reduced && !dragging && pinnedI < 0 && hoverI < 0 && hlGroup < 0)
+    yaw += dt * .00010;                  // slow ambient orbit
+  draw();
+  requestAnimationFrame(frame);
+})(last);
+
+function pick(mx, my) {
+  let best = -1;
+  for (let i = 0; i < P.length; i++) {
+    const p = P[i], r = R(D.nodes[i]) * p.s * (Math.min(vw, 1000) / 1000) + 5;
+    if (Math.hypot(p.x - mx, p.y - my) <= r && (best < 0 || p.z < P[best].z))
+      best = i;                          // front-most hit wins
+  }
+  return best;
+}
+
+/* detail card */
 const detail = document.getElementById('detail');
-let pinned = null;
-const fmtSignal = { sigma_r: 'σ-curve r', vector_cos: 'vector cos',
-  pcs_cos: 'PCS cos', spectra_r: 'spectra r' };
-
 function showNode(i) {
   const n = D.nodes[i];
   const partners = [...adj[i]].map(k => D.edges[k])
     .filter(e => e.p != null).sort((x, y) => y.p - x.p).slice(0, 3);
-  let rel = partners.map(e => {
+  const rel = partners.map(e => {
     const o = D.nodes[e.a === i ? e.b : e.a];
     return `<tr><td class="num">${e.p.toFixed(3)}</td>
       <td class="mono">${o.id}${e.verified ? ' <span class="chip kind">' + e.kind + '</span>' : ''}</td></tr>`;
   }).join('');
   detail.innerHTML = `<h3>${n.id}</h3>
-    <p class="fam"><span class="swatch" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${groupColor(n)}"></span>
+    <p class="fam"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${groupColor(n)}"></span>
     ${n.family} &middot; ${n.type || '?'} &middot; L${n.layers} &middot; ~${n.params}B params</p>
     <table>
       ${n.verdict ? `<tr><td>bench verdict</td><td><span class="chip">${n.verdict}</span></td></tr>` : ''}
       ${n.kind ? `<tr><td>derivation</td><td><span class="chip kind">${n.kind}</span></td></tr>` : ''}
-      ${rel ? `<tr><td>strongest links</td><td></td></tr>${rel}` : '<tr><td>links</td><td class="dim">none above 0.90</td></tr>'}
+      ${rel ? `<tr><td>strongest links</td><td></td></tr>${rel}`
+            : '<tr><td>links</td><td class="dim">none above 0.90</td></tr>'}
     </table>
-    <p class="hint">${pinned === i ? 'click elsewhere to unpin' : 'click to pin'}</p>`;
+    <p class="hint">${pinnedI === i ? 'click empty space to unpin' : 'click to pin'}</p>`;
   detail.classList.add('show');
-  nodeEls.forEach((g, j) => g.classList.toggle('faded',
-    j !== i && ![...adj[i]].some(k => D.edges[k].a === j || D.edges[k].b === j)));
-  edgeEls.forEach((ln, k) => ln.classList.toggle('faded', !adj[i].has(k)));
 }
-function clearHL() {
-  detail.classList.remove('show');
-  nodeEls.forEach(g => g.classList.remove('faded'));
-  edgeEls.forEach(ln => ln.classList.remove('faded'));
-}
-nodeEls.forEach((g, i) => {
-  g.addEventListener('pointerenter', () => { if (pinned === null) showNode(i); });
-  g.addEventListener('pointerleave', () => { if (pinned === null) clearHL(); });
-  g.addEventListener('click', ev => {
-    ev.stopPropagation();
-    pinned = (pinned === i) ? null : i;
-    pinned === null ? clearHL() : showNode(i);
-  });
+const hideDetail = () => detail.classList.remove('show');
+
+/* orbit / zoom / pick */
+let lx = 0, ly = 0, movedPx = 0;
+cvG.addEventListener('pointerdown', ev => {
+  dragging = true; movedPx = 0; lx = ev.clientX; ly = ev.clientY;
+  cvG.classList.add('dragging'); cvG.setPointerCapture(ev.pointerId);
 });
-svg.addEventListener('click', () => { pinned = null; clearHL(); });
+cvG.addEventListener('pointermove', ev => {
+  if (dragging) {
+    const dx = ev.clientX - lx, dy = ev.clientY - ly;
+    lx = ev.clientX; ly = ev.clientY; movedPx += Math.abs(dx) + Math.abs(dy);
+    yaw += dx * .006;
+    pitch = Math.max(-1.25, Math.min(1.25, pitch + dy * .006));
+  } else {
+    const r = cvG.getBoundingClientRect();
+    hoverI = pick(ev.clientX - r.left, ev.clientY - r.top);
+    cvG.style.cursor = hoverI >= 0 ? 'pointer' : 'grab';
+    if (pinnedI < 0) hoverI >= 0 ? showNode(hoverI) : hideDetail();
+  }
+});
+cvG.addEventListener('pointerup', ev => {
+  dragging = false; cvG.classList.remove('dragging');
+  if (movedPx < 5) {
+    const r = cvG.getBoundingClientRect();
+    const i = pick(ev.clientX - r.left, ev.clientY - r.top);
+    pinnedI = (i >= 0 && i !== pinnedI) ? i : -1;
+    pinnedI >= 0 ? showNode(pinnedI) : hideDetail();
+  }
+});
+cvG.addEventListener('pointerleave', () => {
+  hoverI = -1; if (pinnedI < 0) hideDetail();
+});
+cvG.addEventListener('wheel', ev => {
+  ev.preventDefault();
+  zoom = Math.max(.55, Math.min(2.4, zoom * Math.exp(-ev.deltaY * .0012)));
+}, { passive: false });
 
 /* legend */
 const legend = document.getElementById('legend');
@@ -346,13 +435,8 @@ D.groups.forEach((gname, gi) => {
   const item = document.createElement('span');
   item.className = 'item';
   item.innerHTML = `<span class="swatch" style="background:${gname === 'Other' ? css('--g7') : GC(gi)}"></span>${gname}`;
-  item.addEventListener('pointerenter', () => {
-    nodeEls.forEach((g, j) => g.classList.toggle('faded', D.nodes[j].group !== gi));
-    edgeEls.forEach((ln, k) => { const e = D.edges[k];
-      ln.classList.toggle('faded',
-        D.nodes[e.a].group !== gi && D.nodes[e.b].group !== gi); });
-  });
-  item.addEventListener('pointerleave', () => { if (pinned === null) clearHL(); });
+  item.addEventListener('pointerenter', () => { hlGroup = gi; });
+  item.addEventListener('pointerleave', () => { hlGroup = -1; });
   legend.appendChild(item);
 });
 legend.insertAdjacentHTML('beforeend',
@@ -360,27 +444,6 @@ legend.insertAdjacentHTML('beforeend',
    <span class="item"><span class="lineref"></span>&nbsp;detected lineage (P &ge; 0.90)</span>
    <span class="item"><span class="lineref dash"></span>&nbsp;documented, tool abstains</span>
    <span class="item"><svg width="18" height="14"><circle cx="8" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-dasharray="2.5 2.5"/></svg>&nbsp;LineageBench specimen</span>`);
-
-/* ambient drift */
-const drift = !matchMedia('(prefers-reduced-motion: reduce)').matches;
-if (drift) {
-  const phase = D.nodes.map((_, i) => i * 2.4);
-  let t0 = performance.now();
-  (function tick(t) {
-    const s = (t - t0) / 1000;
-    nodeEls.forEach((g, i) => {
-      const dx = Math.sin(s * .5 + phase[i]) * 2.2,
-            dy = Math.cos(s * .38 + phase[i] * 1.7) * 2.2;
-      g.setAttribute('transform', `translate(${dx},${dy})`);
-      [...adj[i]].forEach(k => {
-        const e = D.edges[k], ln = edgeEls[k];
-        if (e.a === i) { ln.setAttribute('x1', px(D.nodes[i]) + dx); ln.setAttribute('y1', py(D.nodes[i]) + dy); }
-        else { ln.setAttribute('x2', px(D.nodes[i]) + dx); ln.setAttribute('y2', py(D.nodes[i]) + dy); }
-      });
-    });
-    requestAnimationFrame(tick);
-  })(t0);
-}
 
 /* ---------------- matrix ---------------- */
 const cv = document.getElementById('matrix'), ctx = cv.getContext('2d');
@@ -405,7 +468,6 @@ function drawMatrix() {
     ctx.fillStyle = ramp(p);
     ctx.fillRect(j * cell, i * cell, Math.ceil(cell), Math.ceil(cell));
   }
-  // hairline separators between groups
   ctx.strokeStyle = css('--axis'); ctx.lineWidth = 1;
   for (let i = 1; i < N; i++) if (D.nodes[i].group !== D.nodes[i - 1].group) {
     ctx.beginPath(); ctx.moveTo(0, i * cell); ctx.lineTo(SIZE, i * cell);

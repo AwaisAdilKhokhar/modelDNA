@@ -70,37 +70,40 @@ def load_fingerprints() -> tuple[dict, dict, set[str]]:
     return fps, families, ref_ids
 
 
-def force_layout(n: int, edges: list[dict], groups: list[int], iters: int = 1500) -> np.ndarray:
-    """Small deterministic force layout, seeded by group angle."""
+def force_layout(n: int, edges: list[dict], groups: list[int], iters: int = 1800) -> np.ndarray:
+    """Small deterministic 3-D force layout, seeded by group direction."""
     rng = np.random.default_rng(7)
     n_groups = max(groups) + 1
     angle = np.array([2 * math.pi * g / n_groups for g in groups])
-    pos = np.stack([np.cos(angle), np.sin(angle)], axis=1) * 10
-    pos += rng.normal(0, 1.5, (n, 2))
+    lift = np.array([(g % 3 - 1) * 0.9 for g in groups])  # spread groups off-plane
+    pos = np.stack([np.cos(angle), lift, np.sin(angle)], axis=1) * 10
+    pos += rng.normal(0, 1.5, (n, 3))
     ei = np.array([[e["a"], e["b"]] for e in edges]) if edges else np.zeros((0, 2), int)
     ew = np.array([e["p"] for e in edges]) if edges else np.zeros(0)
     for it in range(iters):
         temp = 0.12 * (1 - it / iters) + 0.005
         d = pos[:, None, :] - pos[None, :, :]
         dist2 = (d**2).sum(-1) + 1e-6
-        rep = (d / dist2[..., None]).sum(1) * 14.0  # inverse-distance repulsion
-        force = rep - pos * 0.04  # weak centering
+        rep = (d / dist2[..., None]).sum(1) * 16.0  # inverse-distance repulsion
+        force = rep - pos * 0.035  # weak centering
         if len(ei):
             delta = pos[ei[:, 0]] - pos[ei[:, 1]]
             dl = np.linalg.norm(delta, axis=1, keepdims=True) + 1e-6
-            rest = 2.2 - 1.2 * ew[:, None]  # stronger evidence -> shorter spring
-            f = (dl - rest) * delta / dl * 0.9
+            # generous rest lengths so tight families stay legible clusters,
+            # not a single overlapping blob
+            rest = 3.4 - 1.6 * ew[:, None]
+            f = (dl - rest) * delta / dl * 0.8
             np.add.at(force, ei[:, 0], -f)
             np.add.at(force, ei[:, 1], f)
         pos += np.clip(force, -3, 3) * temp
     pos -= pos.mean(0)
-    pos /= np.abs(pos).max() + 1e-9  # normalize to [-1, 1]
+    pos /= np.abs(pos).max() + 1e-9  # normalize to [-1, 1]^3
     return pos
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--out", type=Path, default=REPO / "docs" / "index.html")
+    ap.add_argument("--out", type=Path, default=REPO / "site" / "index.html")
     args = ap.parse_args()
 
     fps, families, ref_ids = load_fingerprints()
@@ -108,6 +111,13 @@ def main() -> int:
     results = json.loads(RESULTS.read_text()) if RESULTS.exists() else {}
     verified = {(p["suspect"], p["parent"]): p for p in manifest["pairs"]}
     verdicts = {r["suspect"]: r for r in results.get("attribution", [])}
+
+    # bench suspects inherit their documented parent's family, so e.g.
+    # zephyr colors as Mistral instead of falling into gray "Other"
+    for (suspect, parent) in verified:
+        if suspect in families and parent in families:
+            if group_of(families[suspect]) == "Other":
+                families[suspect] = families[parent]
 
     # order nodes by group -> family -> name so the matrix shows family blocks
     ids = sorted(fps, key=lambda m: (group_of(families[m]), families[m], m.lower()))
@@ -170,8 +180,8 @@ def main() -> int:
 
     strong = [e for e in edges if e["p"] is not None and e["p"] >= EDGE_P]
     pos = force_layout(len(ids), strong, [n["group"] for n in nodes])
-    for n, (x, y) in zip(nodes, pos):
-        n["x"], n["y"] = round(float(x), 4), round(float(y), 4)
+    for n, (x, y, z) in zip(nodes, pos):
+        n["x"], n["y"], n["z"] = round(float(x), 4), round(float(y), 4), round(float(z), 4)
 
     summary = {k: v for k, v in results.items()
                if k not in ("attribution", "limitation_cases")}
