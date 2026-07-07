@@ -1,6 +1,6 @@
-# modeldna
+# modelDNA
 
-**A 23andMe for open-weight models.** `modeldna` fingerprints an LLM from its
+**A 23andMe for open-weight models.** modelDNA fingerprints an LLM from its
 weights alone and tells you, with a calibrated probability, which base model
 it descends from — regardless of what the README claims.
 
@@ -24,7 +24,7 @@ Hugging Face's model lineage graph is self-reported: the `base_model`
 metadata field is optional and unverified, over 60% of Hub models have no
 documented parentage at all, and every laundering controversy so far
 (Pangu/Qwen 2025, Reflection-70B 2024, Llama3-V 2024) was investigated ad hoc,
-by hand. The detection methods are published and validated — `modeldna`
+by hand. The detection methods are published and validated — modelDNA
 packages them into one command.
 
 ## Install
@@ -65,7 +65,7 @@ Local model directories work anywhere a repo id does.
 
 The safetensors format stores a JSON header (tensor names, shapes, byte
 offsets) at the start of each shard, and the Hub serves byte ranges over
-HTTP. `modeldna` exploits this to fingerprint a 7B model from roughly
+HTTP. modelDNA exploits this to fingerprint a 7B model from roughly
 100–300 MB of traffic instead of 15 GB:
 
 - **Tier 0 — structure (kilobytes).** `config.json`, tokenizer hash, and the
@@ -251,8 +251,8 @@ print(evidence.sigma_r, evidence.pcs_cos_mean)
 ## Development
 
 ```bash
-git clone https://github.com/AwaisAdilKhokhar/modeldna
-cd modeldna
+git clone https://github.com/AwaisAdilKhokhar/modelDNA
+cd modelDNA
 pip install -e .[dev]
 pytest -q
 ruff check src tests benchmarks

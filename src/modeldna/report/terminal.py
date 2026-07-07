@@ -86,7 +86,7 @@ def print_scan(result: ScanResult, top_k: int = 3, console: Console | None = Non
     console = console or Console()
     v = result.verdict
 
-    console.print(Panel(_headline(v), title=f"modeldna scan · {result.target}"))
+    console.print(Panel(_headline(v), title=f"modelDNA scan · {result.target}"))
     console.print(f"[dim]{v.verdict.value}: {DESCRIPTIONS[v.verdict]}[/dim]\n")
 
     arch = result.fingerprint.arch
@@ -126,7 +126,7 @@ def print_scan(result: ScanResult, top_k: int = 3, console: Console | None = Non
     mb = result.bytes_read / 1e6
     console.print(
         f"\n[dim]db v{result.db_version} | {result.mode} mode | "
-        f"{mb:.1f} MB downloaded | modeldna {result.tool_version}[/dim]"
+        f"{mb:.1f} MB downloaded | modelDNA {result.tool_version}[/dim]"
     )
     console.print(f"[dim]{LIMITATIONS}[/dim]")
 
@@ -140,7 +140,7 @@ def print_compare(
     t = Text()
     t.append(f"{ev.suspect_id}  vs  {ev.candidate_id}\n", style="bold")
     t.append_text(_headline(verdict))
-    console.print(Panel(t, title="modeldna compare"))
+    console.print(Panel(t, title="modelDNA compare"))
     console.print(f"[dim]{verdict.verdict.value}: {DESCRIPTIONS[verdict.verdict]}[/dim]\n")
     console.print(_evidence_table(ev, None))
     if ev.sigma_r:

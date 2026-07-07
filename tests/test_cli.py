@@ -37,7 +37,7 @@ def _add(env, name, model_id, family):
 def test_version():
     r = runner.invoke(app, ["--version"])
     assert r.exit_code == 0
-    assert "modeldna" in r.output
+    assert "modelDNA" in r.output
 
 
 def test_db_add_list_info_remove(env):
@@ -98,7 +98,7 @@ def test_scan_html_report(env, tmp_path):
     runner.invoke(app, ["scan", str(env / "ft"), "--report", str(out), "--json"])
     assert out.exists()
     html = out.read_text(encoding="utf-8")
-    assert "modeldna · lineage report" in html
+    assert "modelDNA · lineage report" in html
     assert "FINE_TUNE" in html
     assert "<svg" in html  # sigma-curve plots made it in
     assert "local/base" in html

@@ -54,7 +54,7 @@ def _mode(full: bool) -> str:
 
 def _version_callback(value: bool) -> None:
     if value:
-        console.print(f"modeldna {__version__}")
+        console.print(f"modelDNA {__version__}")
         raise typer.Exit()
 
 
@@ -328,7 +328,7 @@ def db_build(
 
 #: release asset published by .github/workflows/refdb-release.yml
 DEFAULT_DB_URL = (
-    "https://github.com/AwaisAdilKhokhar/modeldna/releases/latest/download/modeldna-refdb.tar.gz"
+    "https://github.com/AwaisAdilKhokhar/modelDNA/releases/latest/download/modeldna-refdb.tar.gz"
 )
 
 

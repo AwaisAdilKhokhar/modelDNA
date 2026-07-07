@@ -218,11 +218,11 @@ def render_html(d: dict[str, Any]) -> str:
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>modeldna report · {html.escape(d['target'])}</title>
+<title>modelDNA report · {html.escape(d['target'])}</title>
 <style>{_CSS}</style>
 </head>
 <body>
-<h1>modeldna · lineage report</h1>
+<h1>modelDNA · lineage report</h1>
 <p><code>{html.escape(d['target'])}</code></p>
 <p><span class="badge" style="background:{vcolor}">{html.escape(headline)}</span></p>
 <p class="dim">{html.escape(verdict.get('description', ''))}</p>
@@ -253,7 +253,7 @@ are the countermeasure and are reported separately). Findings are statements
 of statistical consistency with derivation, never accusations.</p>
 <p>reference DB v{d.get('db_version', '?')} · scan mode: {html.escape(d.get('mode', ''))} ·
 {(d.get('bytes_read') or 0) / 1e6:.1f} MB downloaded ·
-modeldna {html.escape(d.get('tool_version', ''))}</p>
+modelDNA {html.escape(d.get('tool_version', ''))}</p>
 <p>reproduce: <code>{html.escape(repro)}</code></p>
 </div>
 <script type="application/json" id="modeldna-data">
