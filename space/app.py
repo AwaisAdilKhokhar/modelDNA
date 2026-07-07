@@ -6,6 +6,9 @@ reference DB (the same archive `modeldna db pull` uses), then each scan
 reads only the sampled weight slices of the suspect model (~250 MB for a
 7B), so a verdict lands in a couple of minutes on Space networking.
 
+Visual language follows the Atlas (site/index.html): paper/ink palette,
+mono eyebrows, --g0 blue accent, light/dark via CSS variables.
+
 Deployed from the `space/` directory of
 https://github.com/AwaisAdilKhokhar/modelDNA — edit there, not on the Hub.
 """
@@ -13,6 +16,7 @@ https://github.com/AwaisAdilKhokhar/modelDNA — edit there, not on the Hub.
 from __future__ import annotations
 
 import html
+import json
 import os
 import re
 import tempfile
@@ -46,6 +50,7 @@ MAX_WEIGHT_BYTES = 180e9
 READ_ERRORS = (SourceError, WeightIndexError, SafetensorsError)
 
 REPO_URL = "https://github.com/AwaisAdilKhokhar/modelDNA"
+ATLAS_URL = "https://awaisadilkhokhar.github.io/modelDNA/"
 
 _SIGNALS = [
     ("attention σ-curve correlation (F1)", "sigma_r_mean", "sigma_r"),
@@ -116,18 +121,34 @@ def _fmt(v: float | None) -> str:
     return f"{v:.3f}" if v is not None else "—"
 
 
-def _summary_html(d: dict, elapsed: float, cached: bool) -> str:
+def _table(headers: list[tuple[str, bool]], rows: list[list[str]]) -> str:
+    """headers: (label, right-aligned); cell strings are pre-escaped."""
+    head = "".join(
+        f"<th class='{'num' if right else ''}'>{label}</th>" for label, right in headers
+    )
+    body = "".join(
+        "<tr>"
+        + "".join(
+            f"<td class='{'num' if right else ''}'>{cell}</td>"
+            for cell, (_, right) in zip(row, headers)
+        )
+        + "</tr>"
+        for row in rows
+    )
+    return f"<table class='mdna-table'><tr>{head}</tr>{body}</table>"
+
+
+def _result_html(d: dict, elapsed: float, cached: bool) -> str:
     v = d["verdict"]
     vclass = v["verdict"]
     prob = v.get("probability")
     best = v.get("best_candidate")
     vcolor = _VERDICT_COLOR.get(vclass, "#566573")
 
-    headline = html.escape(vclass)
+    headline = f"<b>{html.escape(vclass)}</b>"
     if prob is not None and best and vclass not in ("NO_MATCH", "INSUFFICIENT"):
         headline += (
-            f" <span style='font-weight:400'>· {prob * 100:.1f}% likely derived "
-            f"from <b>{html.escape(best)}</b></span>"
+            f" · {prob * 100:.1f}% likely derived from {html.escape(best)}"
         )
 
     cons = d.get("consistency", {})
@@ -140,40 +161,16 @@ def _summary_html(d: dict, elapsed: float, cached: bool) -> str:
         else "none stated"
     )
 
-    badge = (
-        "display:inline-block;padding:.3rem .8rem;border-radius:6px;color:#fff;"
-        "font-weight:600;font-size:1.05rem"
-    )
     parts = [
-        "<div style='font-family:ui-sans-serif,system-ui,sans-serif;line-height:1.5'>",
-        f"<p><span style='{badge};background:{vcolor}'>{headline}</span></p>",
-        f"<p style='color:#6c757d'>{html.escape(v.get('description', ''))}</p>",
-        "<p>claimed lineage: <b>" + claimed + "</b> &nbsp; "
-        f"<span style='{badge};font-size:.85rem;padding:.15rem .5rem;"
-        f"background:{ccolor}'>{html.escape(cstatus)}</span><br>"
-        f"<span style='color:#6c757d;font-size:.9rem'>"
-        f"{html.escape(cons.get('detail', ''))}</span></p>",
+        "<div class='mdna-card'>",
+        f"<div class='mdna-eyebrow'>VERDICT — {html.escape(d.get('target', ''))}</div>",
+        f"<div class='mdna-verdict' style='background:{vcolor}'>{headline}</div>",
+        f"<p class='mdna-desc'>{html.escape(v.get('description', ''))}</p>",
+        "<p class='mdna-claims'>claimed lineage: "
+        f"<b>{claimed}</b>&ensp;"
+        f"<span class='mdna-pill' style='background:{ccolor}'>{html.escape(cstatus)}</span>"
+        f"<br><span class='mdna-dim'>{html.escape(cons.get('detail', ''))}</span></p>",
     ]
-
-    th = "text-align:left;padding:.3rem .6rem;border-bottom:1px solid #adb5bd"
-    td = "padding:.3rem .6rem;border-bottom:1px solid #dee2e6"
-    num = ";text-align:right"
-
-    def _table(headers: list[tuple[str, bool]], rows: list[list[str]]) -> str:
-        # headers: (label, right-aligned); cell strings are pre-escaped
-        head = "".join(
-            f"<th style='{th}{num if right else ''}'>{label}</th>"
-            for label, right in headers
-        )
-        body = "".join(
-            "<tr>" + "".join(
-                f"<td style='{td}{num if right else ''}'>{cell}</td>"
-                for cell, (_, right) in zip(row, headers)
-            ) + "</tr>"
-            for row in rows
-        )
-        return ("<table style='border-collapse:collapse;margin:.5rem 0'>"
-                f"<tr>{head}</tr>{body}</table>")
 
     best_cand = next(
         (c for c in v.get("candidates", []) if c["candidate_id"] == best), None
@@ -186,7 +183,7 @@ def _summary_html(d: dict, elapsed: float, cached: bool) -> str:
                 [
                     html.escape(label),
                     f"<b>{_fmt(best_cand['evidence'].get(ev_key))}</b>",
-                    f"<span style='color:#6c757d'>{html.escape(bg.get(bg_key, '—'))}</span>",
+                    f"<span class='mdna-dim'>{html.escape(bg.get(bg_key, '—'))}</span>",
                 ]
                 for label, ev_key, bg_key in _SIGNALS
             ],
@@ -205,7 +202,16 @@ def _summary_html(d: dict, elapsed: float, cached: bool) -> str:
         ))
 
     for n in v.get("notes", []):
-        parts.append(f"<p style='color:#6c757d;font-size:.9rem'>note: {html.escape(n)}</p>")
+        parts.append(f"<p class='mdna-dim mdna-note'>note: {html.escape(n)}</p>")
+
+    report_doc = html.escape(render_html(d))
+    raw = html.escape(json.dumps(d, indent=1))
+    parts.append(
+        "<details class='mdna-details'><summary>Full evidence report</summary>"
+        f"<iframe sandbox loading='lazy' srcdoc=\"{report_doc}\"></iframe></details>"
+        "<details class='mdna-details'><summary>Raw JSON</summary>"
+        f"<pre>{raw}</pre></details>"
+    )
 
     stamp = (
         f"fast mode · {d.get('bytes_read', 0) / 1e6:.0f} MB read · "
@@ -214,17 +220,8 @@ def _summary_html(d: dict, elapsed: float, cached: bool) -> str:
     )
     if cached:
         stamp = "cached result · " + stamp
-    parts.append(f"<p style='color:#adb5bd;font-size:.85rem'>{stamp}</p></div>")
+    parts.append(f"<div class='mdna-stamp'>{stamp}</div></div>")
     return "".join(parts)
-
-
-def _report_iframe(d: dict) -> str:
-    doc = render_html(d)
-    return (
-        f"<iframe sandbox srcdoc=\"{html.escape(doc)}\" "
-        "style='width:100%;height:1300px;border:1px solid #dee2e6;"
-        "border-radius:8px;background:#fff'></iframe>"
-    )
 
 
 def do_scan(repo_id: str, revision: str, progress=gr.Progress()):
@@ -238,7 +235,7 @@ def do_scan(repo_id: str, revision: str, progress=gr.Progress()):
     key = f"{repo_id}@{revision}#db{DB.version}"
     if key in _CACHE:
         d, elapsed = _CACHE[key]
-        return _summary_html(d, elapsed, cached=True), _report_iframe(d), d
+        return _result_html(d, elapsed, cached=True)
 
     progress(0.05, desc=f"checking {repo_id} on the Hub")
     total = _preflight(repo_id, revision)
@@ -258,35 +255,143 @@ def do_scan(repo_id: str, revision: str, progress=gr.Progress()):
     progress(0.95, desc="rendering report")
     d = res.to_dict()
     _CACHE[key] = (d, elapsed)
-    return _summary_html(d, elapsed, cached=False), _report_iframe(d), d
+    return _result_html(d, elapsed, cached=False)
 
+
+CSS = """
+.gradio-container { max-width: 1000px !important; margin: 0 auto !important; }
+footer { display: none !important; }
+
+.gradio-container {
+  --mdna-ink: #0b0b0b; --mdna-ink2: #52514e; --mdna-muted: #898781;
+  --mdna-grid: #e1e0d9; --mdna-axis: #c3c2b7; --mdna-accent: #2a78d6;
+  --mdna-card: #ffffff; --mdna-surface: #fcfcfb;
+  --mdna-shadow: 0 10px 30px rgba(11,11,11,.08);
+}
+.dark .gradio-container, .gradio-container.dark {
+  --mdna-ink: #ffffff; --mdna-ink2: #c3c2b7; --mdna-muted: #898781;
+  --mdna-grid: #2c2c2a; --mdna-axis: #383835; --mdna-accent: #3987e5;
+  --mdna-card: #222221; --mdna-surface: #1a1a19;
+  --mdna-shadow: 0 10px 30px rgba(0,0,0,.5);
+}
+
+.mdna-mono { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
+
+/* header */
+.mdna-brand { display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  margin: 6px 0 2px; }
+.mdna-brand h1 { font-size: 28px; margin: 0; letter-spacing: -.01em;
+  color: var(--mdna-ink); }
+.mdna-brand h1 .dna { color: var(--mdna-accent); }
+.mdna-tag { font-family: ui-monospace, Consolas, monospace; font-size: 12px;
+  letter-spacing: .24em; color: var(--mdna-ink2);
+  border: 1px solid var(--mdna-axis); border-radius: 999px;
+  padding: 4px 12px 3px; background: var(--mdna-surface); }
+.mdna-links { display: flex; gap: 8px; }
+.mdna-links a { font-family: ui-monospace, Consolas, monospace; font-size: 12px;
+  letter-spacing: .12em; text-decoration: none; color: var(--mdna-ink2);
+  border: 1px solid var(--mdna-axis); border-radius: 999px;
+  padding: 5px 13px 4px; background: var(--mdna-surface); }
+.mdna-links a:hover { border-color: var(--mdna-ink2); color: var(--mdna-ink); }
+.mdna-thesis { max-width: 68ch; color: var(--mdna-ink2); margin: 10px 0 4px;
+  font-size: 15px; line-height: 1.55; text-wrap: balance; }
+.mdna-thesis b { color: var(--mdna-ink); }
+
+/* scan button */
+#mdna-scan { background: var(--mdna-accent) !important; color: #fff !important;
+  border: none !important; box-shadow: none !important; }
+#mdna-scan:hover { filter: brightness(1.08); }
+
+/* result card */
+.mdna-card { border: 1px solid var(--mdna-grid); border-radius: 14px;
+  background: var(--mdna-card); box-shadow: var(--mdna-shadow);
+  padding: 20px 22px 14px; margin: 6px 0 2px; color: var(--mdna-ink);
+  line-height: 1.5; }
+.mdna-eyebrow { font-family: ui-monospace, Consolas, monospace;
+  font-size: 11.5px; letter-spacing: .22em; color: var(--mdna-muted);
+  margin-bottom: 10px; }
+.mdna-verdict { display: inline-block; padding: .38rem .9rem;
+  border-radius: 8px; color: #fff; font-size: 1.06rem; }
+.mdna-desc { color: var(--mdna-ink2); margin: .6rem 0 .2rem; }
+.mdna-claims { margin: .6rem 0; }
+.mdna-pill { display: inline-block; padding: .1rem .55rem; border-radius: 999px;
+  color: #fff; font-size: .8rem; font-weight: 600; vertical-align: 1px; }
+.mdna-dim { color: var(--mdna-muted); font-size: .9rem; }
+.mdna-note { margin: .25rem 0; }
+.mdna-table { border-collapse: collapse; margin: .75rem 0; width: 100%; }
+.mdna-table th, .mdna-table td { text-align: left; padding: .32rem .6rem;
+  border-bottom: 1px solid var(--mdna-grid); font-size: .92rem; }
+.mdna-table th { font-family: ui-monospace, Consolas, monospace;
+  font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--mdna-muted); border-bottom: 1px solid var(--mdna-axis); }
+.mdna-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.mdna-details { margin: .55rem 0; border: 1px solid var(--mdna-grid);
+  border-radius: 10px; background: var(--mdna-surface); }
+.mdna-details summary { cursor: pointer; padding: .55rem .9rem;
+  font-family: ui-monospace, Consolas, monospace; font-size: 12px;
+  letter-spacing: .14em; color: var(--mdna-ink2); }
+.mdna-details[open] summary { border-bottom: 1px solid var(--mdna-grid); }
+.mdna-details iframe { width: 100%; height: 1250px; border: none;
+  border-radius: 0 0 10px 10px; background: #fff; display: block; }
+.mdna-details pre { margin: 0; padding: .8rem 1rem; max-height: 480px;
+  overflow: auto; font-size: 12px; }
+.mdna-stamp { color: var(--mdna-muted); font-size: .82rem; margin-top: .8rem;
+  font-family: ui-monospace, Consolas, monospace; }
+
+/* footer */
+.mdna-foot { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+  margin-top: 10px; padding-top: 16px; border-top: 1px solid var(--mdna-grid); }
+@media (max-width: 760px) { .mdna-foot { grid-template-columns: 1fr; } }
+.mdna-foot h4 { font-family: ui-monospace, Consolas, monospace;
+  font-size: 11.5px; letter-spacing: .22em; color: var(--mdna-muted);
+  margin: 0 0 6px; font-weight: 600; }
+.mdna-foot p { color: var(--mdna-ink2); font-size: .86rem; line-height: 1.55;
+  margin: 0; }
+.mdna-foot code { font-size: .8rem; }
+.mdna-foot a { color: var(--mdna-accent); text-decoration: none; }
+.mdna-foot a:hover { text-decoration: underline; }
+"""
 
 HEADER = f"""
-# 🧬 modelDNA — live lineage scanner
-
-Paste an open-weight model's Hub repo id. modelDNA reads a few hundred MB of
-**sampled weight slices** (never the full checkpoint), fingerprints them, and
-reports — with a calibrated probability — which of **{len(DB)} indexed base
-models** the model descends from. When the evidence doesn't single out a
-parent, it says so instead of guessing.
+<div class="mdna-brand">
+  <h1><span class="dna">🧬</span> model<b>DNA</b></h1>
+  <span class="mdna-tag">LIVE SCANNER</span>
+  <div class="mdna-links">
+    <a href="{ATLAS_URL}" target="_blank">ATLAS ↗</a>
+    <a href="{REPO_URL}" target="_blank">GITHUB ↗</a>
+  </div>
+</div>
+<p class="mdna-thesis">Paste an open-weight model's Hub repo id. modelDNA
+reads a few hundred MB of <b>sampled weight slices</b> — never the full
+checkpoint — fingerprints them, and reports with a calibrated probability
+which of <b>{len(DB)} indexed base models</b> it descends from. When the
+evidence doesn't single out a parent, it says so instead of guessing.</p>
 """
 
 FOOTER = f"""
-----
-**Reading the verdict.** `NO_MATCH` means *no indexed parent matched* — the
-model may be trained from scratch **or** descend from a base that isn't in the
-reference DB yet. Thresholds are deliberately conservative: the worst failure
-mode of a tool like this is a false accusation, so ambiguous evidence resolves
-to `SAME_FAMILY_UNRESOLVED` or `NO_MATCH`, not to a confident claim.
-
-**Limits.** Safetensors repos only (no `.bin`, no GGUF); scans here are capped
-at {MAX_WEIGHT_BYTES / 1e9:.0f} GB of weights; gated repos (Llama, Gemma…)
-need your own HF login, so scan those locally.
-
-**Run it yourself:** `pip install "modeldna @ git+{REPO_URL}"`,
-then `modeldna db pull` (seconds) and `modeldna scan org/model`.
-Source, method docs and the interactive family-tree Atlas:
-[github.com/AwaisAdilKhokhar/modelDNA]({REPO_URL}).
+<div class="mdna-foot">
+  <div>
+    <h4>READING THE VERDICT</h4>
+    <p><code>NO_MATCH</code> means <i>no indexed parent matched</i> — the
+    model may be trained from scratch <b>or</b> descend from a base that
+    isn't in the reference DB yet. Thresholds are deliberately conservative:
+    ambiguous evidence resolves to abstention, not to a confident claim.</p>
+  </div>
+  <div>
+    <h4>LIMITS</h4>
+    <p>Safetensors repos only (no <code>.bin</code>, no GGUF). Scans here
+    are capped at {MAX_WEIGHT_BYTES / 1e9:.0f}&nbsp;GB of weights. Gated
+    repos (Llama, Gemma…) need your own HF login — scan those locally.</p>
+  </div>
+  <div>
+    <h4>RUN IT YOURSELF</h4>
+    <p><code>pip install "modeldna @ git+{REPO_URL}"</code><br>
+    then <code>modeldna db pull</code> · <code>modeldna scan org/model</code>.
+    Source &amp; method docs on
+    <a href="{REPO_URL}" target="_blank">GitHub</a>, the reconstructed
+    family tree in the <a href="{ATLAS_URL}" target="_blank">Atlas</a>.</p>
+  </div>
+</div>
 """
 
 EXAMPLES = [
@@ -297,35 +402,24 @@ EXAMPLES = [
 ]
 
 with gr.Blocks(title="modelDNA — lineage scanner") as demo:
-    gr.Markdown(HEADER)
+    gr.HTML(HEADER)
     with gr.Row():
         repo_in = gr.Textbox(
             label="Hub repo id",
             placeholder="org/model — e.g. HuggingFaceH4/zephyr-7b-beta",
-            scale=4,
+            scale=5,
         )
         rev_in = gr.Textbox(label="revision", value="main", scale=1)
-        scan_btn = gr.Button("Scan", variant="primary", scale=1)
-    summary_out = gr.HTML()
-    with gr.Accordion("Full evidence report", open=False):
-        report_out = gr.HTML()
-    with gr.Accordion("Raw JSON", open=False):
-        json_out = gr.JSON()
+        scan_btn = gr.Button("Scan", variant="primary", scale=1,
+                             elem_id="mdna-scan")
+    result_out = gr.HTML()
     gr.Examples(examples=EXAMPLES, inputs=[repo_in])
-    gr.Markdown(FOOTER)
+    gr.HTML(FOOTER)
 
-    scan_btn.click(
-        do_scan,
-        inputs=[repo_in, rev_in],
-        outputs=[summary_out, report_out, json_out],
-        concurrency_limit=1,
-    )
-    repo_in.submit(
-        do_scan,
-        inputs=[repo_in, rev_in],
-        outputs=[summary_out, report_out, json_out],
-        concurrency_limit=1,
-    )
+    scan_btn.click(do_scan, inputs=[repo_in, rev_in], outputs=[result_out],
+                   concurrency_limit=1)
+    repo_in.submit(do_scan, inputs=[repo_in, rev_in], outputs=[result_out],
+                   concurrency_limit=1)
 
 if __name__ == "__main__":
-    demo.queue(max_size=32).launch()
+    demo.queue(max_size=32).launch(css=CSS)
