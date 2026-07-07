@@ -1,0 +1,175 @@
+{
+  "n_positive_pairs": 13,
+  "n_hard_negative_pairs": 107,
+  "n_limitation_cases": 2,
+  "auroc": 1.0,
+  "tpr_at_fpr_1pct": 1.0,
+  "false_positives_at_0.9": 0,
+  "min_positive_p": 0.9426,
+  "max_negative_p": 0.6596,
+  "max_calibration_gap": 0.6366,
+  "by_kind_min_p": {
+    "fine-tune": 0.998,
+    "continued-pretrain": 0.9796,
+    "official-instruct": 0.9426,
+    "merge-chain": 0.9984
+  },
+  "top1_attribution_accuracy": 0.9333,
+  "attribution": [
+    {
+      "suspect": "HuggingFaceH4/zephyr-7b-beta",
+      "true_parent": "mistralai/Mistral-7B-v0.1",
+      "kind": "fine-tune",
+      "score_vs_true_parent": 0.9985,
+      "verdict": "SAME_FAMILY_UNRESOLVED",
+      "verdict_best_candidate": "mistralai/Mistral-7B-v0.1",
+      "top1_correct": true
+    },
+    {
+      "suspect": "teknium/OpenHermes-2.5-Mistral-7B",
+      "true_parent": "mistralai/Mistral-7B-v0.1",
+      "kind": "fine-tune",
+      "score_vs_true_parent": 0.9985,
+      "verdict": "SAME_FAMILY_UNRESOLVED",
+      "verdict_best_candidate": "mistralai/Mistral-7B-v0.1",
+      "top1_correct": true
+    },
+    {
+      "suspect": "NousResearch/Nous-Hermes-llama-2-7b",
+      "true_parent": "meta-llama/Llama-2-7b-hf",
+      "kind": "fine-tune",
+      "score_vs_true_parent": 0.9985,
+      "verdict": "QUANTIZED_COPY",
+      "verdict_best_candidate": "meta-llama/Llama-2-7b-hf",
+      "top1_correct": true
+    },
+    {
+      "suspect": "codellama/CodeLlama-7b-hf",
+      "true_parent": "meta-llama/Llama-2-7b-hf",
+      "kind": "continued-pretrain",
+      "score_vs_true_parent": 0.9832,
+      "verdict": "SAME_LINEAGE",
+      "verdict_best_candidate": "meta-llama/Llama-2-7b-hf",
+      "top1_correct": true
+    },
+    {
+      "suspect": "Qwen/Qwen2.5-Coder-7B-Instruct",
+      "true_parent": "Qwen/Qwen2.5-7B",
+      "kind": "continued-pretrain",
+      "score_vs_true_parent": 0.9796,
+      "verdict": "SAME_LINEAGE",
+      "verdict_best_candidate": "Qwen/Qwen2.5-7B",
+      "top1_correct": true
+    },
+    {
+      "suspect": "cognitivecomputations/dolphin-2.9-llama3-8b",
+      "true_parent": "meta-llama/Meta-Llama-3-8B",
+      "kind": "fine-tune",
+      "score_vs_true_parent": 0.998,
+      "verdict": "FINE_TUNE",
+      "verdict_best_candidate": "meta-llama/Meta-Llama-3-8B",
+      "top1_correct": true
+    },
+    {
+      "suspect": "google/gemma-2-9b-it",
+      "true_parent": "google/gemma-2-9b",
+      "kind": "official-instruct",
+      "score_vs_true_parent": 0.9983,
+      "verdict": "SAME_LINEAGE",
+      "verdict_best_candidate": "google/gemma-2-9b",
+      "top1_correct": true
+    },
+    {
+      "suspect": "google/gemma-2b-it",
+      "true_parent": "google/gemma-2b",
+      "kind": "official-instruct",
+      "score_vs_true_parent": 0.9426,
+      "verdict": "SAME_LINEAGE",
+      "verdict_best_candidate": "google/gemma-2b",
+      "top1_correct": true
+    },
+    {
+      "suspect": "meta-llama/Meta-Llama-3-8B-Instruct",
+      "true_parent": "meta-llama/Meta-Llama-3-8B",
+      "kind": "official-instruct",
+      "score_vs_true_parent": 0.9985,
+      "verdict": "FINE_TUNE",
+      "verdict_best_candidate": "meta-llama/Meta-Llama-3-8B",
+      "top1_correct": true
+    },
+    {
+      "suspect": "Qwen/Qwen2.5-7B-Instruct",
+      "true_parent": "Qwen/Qwen2.5-7B",
+      "kind": "official-instruct",
+      "score_vs_true_parent": 0.9985,
+      "verdict": "FINE_TUNE",
+      "verdict_best_candidate": "Qwen/Qwen2.5-7B",
+      "top1_correct": true
+    },
+    {
+      "suspect": "Qwen/Qwen2.5-14B-Instruct",
+      "true_parent": "Qwen/Qwen2.5-14B",
+      "kind": "official-instruct",
+      "score_vs_true_parent": 0.9985,
+      "verdict": "FINE_TUNE",
+      "verdict_best_candidate": "Qwen/Qwen2.5-14B",
+      "top1_correct": true
+    },
+    {
+      "suspect": "mistralai/Mistral-7B-Instruct-v0.3",
+      "true_parent": "mistralai/Mistral-7B-v0.3",
+      "kind": "official-instruct",
+      "score_vs_true_parent": 0.9985,
+      "verdict": "SAME_FAMILY_UNRESOLVED",
+      "verdict_best_candidate": "mistralai/Mistral-7B-v0.3",
+      "top1_correct": true
+    },
+    {
+      "suspect": "mlabonne/AlphaMonarch-7B",
+      "true_parent": "mistralai/Mistral-7B-v0.1",
+      "kind": "merge-chain",
+      "score_vs_true_parent": 0.9984,
+      "verdict": "SAME_FAMILY_UNRESOLVED",
+      "verdict_best_candidate": "mistralai/Mistral-7B-v0.1",
+      "top1_correct": true
+    },
+    {
+      "suspect": "upstage/SOLAR-10.7B-v1.0",
+      "true_parent": "mistralai/Mistral-7B-v0.1",
+      "kind": "depth-upscale",
+      "score_vs_true_parent": 0.1067,
+      "verdict": "NO_MATCH",
+      "verdict_best_candidate": null,
+      "top1_correct": false
+    },
+    {
+      "suspect": "TheBloke/Mistral-7B-v0.1-GPTQ",
+      "true_parent": "mistralai/Mistral-7B-v0.1",
+      "kind": "quantized-copy",
+      "score_vs_true_parent": 0.1301,
+      "verdict": "NO_MATCH",
+      "verdict_best_candidate": "mistralai/Mistral-7B-v0.1",
+      "top1_correct": true
+    }
+  ],
+  "limitation_cases": [
+    {
+      "suspect": "upstage/SOLAR-10.7B-v1.0",
+      "true_parent": "mistralai/Mistral-7B-v0.1",
+      "kind": "depth-upscale",
+      "score_vs_true_parent": 0.1067,
+      "verdict": "NO_MATCH",
+      "verdict_best_candidate": null,
+      "top1_correct": false
+    },
+    {
+      "suspect": "TheBloke/Mistral-7B-v0.1-GPTQ",
+      "true_parent": "mistralai/Mistral-7B-v0.1",
+      "kind": "quantized-copy",
+      "score_vs_true_parent": 0.1301,
+      "verdict": "NO_MATCH",
+      "verdict_best_candidate": "mistralai/Mistral-7B-v0.1",
+      "top1_correct": true
+    }
+  ]
+}

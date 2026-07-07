@@ -1,0 +1,489 @@
+{
+  "db_version": 23,
+  "updated_at": "2026-07-07T09:04:06+00:00",
+  "entries": [
+    {
+      "model_id": "mistralai/Mistral-7B-v0.1",
+      "family": "mistral",
+      "file": "mistralai__Mistral-7B-v0.1.json.gz",
+      "revision": "",
+      "core_shape": [
+        4096,
+        32,
+        32,
+        8,
+        14336
+      ],
+      "n_layers": 32,
+      "inventory_hash": "37f531167e258b85f1ba22c826f86750f45441a624014053772d1fd9f783b2d6",
+      "tokenizer_hash": "11c08db21487c885d8c792180f0be237f6a261b89a46f128a6a80a3aa4bd1720",
+      "torch_dtype": "bfloat16",
+      "meta": {
+        "source": "copied-from-local-db"
+      },
+      "added_at": "2026-07-06T11:57:28+00:00"
+    },
+    {
+      "model_id": "mistralai/Mistral-7B-v0.3",
+      "family": "mistral",
+      "file": "mistralai__Mistral-7B-v0.3.json.gz",
+      "revision": "",
+      "core_shape": [
+        4096,
+        32,
+        32,
+        8,
+        14336
+      ],
+      "n_layers": 32,
+      "inventory_hash": "8623bb3d6a672303b4ee02b571d9640f1db3e78203b6f9906daa610ad3700ba6",
+      "tokenizer_hash": "e553af6fff7d7ad76e830608b218c5c0b0822998d5a1a96099a74cd3c1cb1a49",
+      "torch_dtype": "bfloat16",
+      "meta": {
+        "source": "copied-from-local-db"
+      },
+      "added_at": "2026-07-06T11:57:29+00:00"
+    },
+    {
+      "model_id": "meta-llama/Llama-2-7b-hf",
+      "family": "llama-2",
+      "file": "meta-llama__Llama-2-7b-hf.json.gz",
+      "revision": "",
+      "core_shape": [
+        4096,
+        32,
+        32,
+        32,
+        11008
+      ],
+      "n_layers": 32,
+      "inventory_hash": "c295c29c87530888e91954916494f56bee46a8fbd58a3487d175f43822676f7f",
+      "tokenizer_hash": "bcd04f0eadf90287bd26e1a183ac487d8a141b09b06aecb7725bbdd343640f2e",
+      "torch_dtype": "float16",
+      "meta": {
+        "source": "copied-from-local-db"
+      },
+      "added_at": "2026-07-06T11:57:31+00:00"
+    },
+    {
+      "model_id": "meta-llama/Meta-Llama-3-8B",
+      "family": "llama-3",
+      "file": "meta-llama__Meta-Llama-3-8B.json.gz",
+      "revision": "",
+      "core_shape": [
+        4096,
+        32,
+        32,
+        8,
+        14336
+      ],
+      "n_layers": 32,
+      "inventory_hash": "148376d067201b8bfd457bc4689268564df3859d2f945cedc211d637ffc6973d",
+      "tokenizer_hash": "e134af98b985517b4f068e3755ae90d4e9cd2d45d328325dc503f1c6b2d06cc7",
+      "torch_dtype": "bfloat16",
+      "meta": {
+        "source": "copied-from-local-db"
+      },
+      "added_at": "2026-07-06T11:57:34+00:00"
+    },
+    {
+      "model_id": "Qwen/Qwen2.5-7B",
+      "family": "qwen2.5",
+      "file": "Qwen__Qwen2.5-7B.json.gz",
+      "revision": "",
+      "core_shape": [
+        3584,
+        28,
+        28,
+        4,
+        18944
+      ],
+      "n_layers": 28,
+      "inventory_hash": "57b5d0d904e4e04db13334a388118f03db76213614ff782edbdab514f95f8984",
+      "tokenizer_hash": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+      "torch_dtype": "bfloat16",
+      "meta": {
+        "source": "copied-from-local-db"
+      },
+      "added_at": "2026-07-06T11:57:37+00:00"
+    },
+    {
+      "model_id": "Qwen/Qwen2.5-14B",
+      "family": "qwen2.5",
+      "file": "Qwen__Qwen2.5-14B.json.gz",
+      "revision": "",
+      "core_shape": [
+        5120,
+        48,
+        40,
+        8,
+        13824
+      ],
+      "n_layers": 48,
+      "inventory_hash": "d2256927aa1e2de2e18aeca87c08fcc6ec768877cb85623c394c31a65dfdf5bd",
+      "tokenizer_hash": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+      "torch_dtype": "bfloat16",
+      "meta": {
+        "source": "copied-from-local-db"
+      },
+      "added_at": "2026-07-06T11:57:39+00:00"
+    },
+    {
+      "model_id": "google/gemma-2b",
+      "family": "gemma-2",
+      "file": "google__gemma-2b.json.gz",
+      "revision": "",
+      "core_shape": [
+        2048,
+        18,
+        8,
+        1,
+        16384
+      ],
+      "n_layers": 18,
+      "inventory_hash": "5d148876cec659381456b8349bc888b5c6fd4319708810967c623c48d0a8d186",
+      "tokenizer_hash": "c15eb04bc5ad609fb26533e8525302c5640a945e5f67f65b7c849900acda7d99",
+      "torch_dtype": "bfloat16",
+      "meta": {
+        "source": "copied-from-local-db"
+      },
+      "added_at": "2026-07-06T11:57:41+00:00"
+    },
+    {
+      "model_id": "google/gemma-2-9b",
+      "family": "gemma-2",
+      "file": "google__gemma-2-9b.json.gz",
+      "revision": "",
+      "core_shape": [
+        3584,
+        42,
+        16,
+        8,
+        14336
+      ],
+      "n_layers": 42,
+      "inventory_hash": "608909beae800393dadb60ed4555fe26be6420ff534b82912d83f58be532472d",
+      "tokenizer_hash": "3f289bc05132635a8bc7aca7aa21255efd5e18f3710f43e3cdb96bcd41be4922",
+      "torch_dtype": "float32",
+      "meta": {
+        "source": "copied-from-local-db"
+      },
+      "added_at": "2026-07-06T11:57:48+00:00"
+    },
+    {
+      "model_id": "HuggingFaceH4/zephyr-7b-beta",
+      "family": "huggingfaceh4",
+      "file": "HuggingFaceH4__zephyr-7b-beta.json.gz",
+      "revision": "",
+      "core_shape": [
+        4096,
+        32,
+        32,
+        8,
+        14336
+      ],
+      "n_layers": 32,
+      "inventory_hash": "37f531167e258b85f1ba22c826f86750f45441a624014053772d1fd9f783b2d6",
+      "tokenizer_hash": "fc4f0bd70b3709312d9d1d9e5ba674794b6bc5abc17429897a540f93882f25fc",
+      "torch_dtype": "bfloat16",
+      "meta": {
+        "source": "hub-fast-fetch"
+      },
+      "added_at": "2026-07-06T17:17:26+00:00"
+    },
+    {
+      "model_id": "teknium/OpenHermes-2.5-Mistral-7B",
+      "family": "teknium",
+      "file": "teknium__OpenHermes-2.5-Mistral-7B.json.gz",
+      "revision": "",
+      "core_shape": [
+        4096,
+        32,
+        32,
+        8,
+        14336
+      ],
+      "n_layers": 32,
+      "inventory_hash": "2defce9d9fb6bd62e84fc0ff335a55b7eec7e3c84d3d571594acad05901f3b40",
+      "tokenizer_hash": "dadfd56d766715c61d2ef780a525ab43b8e6da4de6865bda3d95fdef5e134055",
+      "torch_dtype": "bfloat16",
+      "meta": {
+        "source": "hub-fast-fetch"
+      },
+      "added_at": "2026-07-06T20:49:39+00:00"
+    },
+    {
+      "model_id": "NousResearch/Nous-Hermes-llama-2-7b",
+      "family": "nousresearch",
+      "file": "NousResearch__Nous-Hermes-llama-2-7b.json.gz",
+      "revision": "",
+      "core_shape": [
+        4096,
+        32,
+        32,
+        32,
+        11008
+      ],
+      "n_layers": 32,
+      "inventory_hash": "545146313a7afe53ac40353a73861e66194f1d9b159763e9a21b6b2dca2b6b56",
+      "tokenizer_hash": "00d8eea2ddc7b5c0b5ef59371b00dd90092ef11283e8561a8536ae5846c55507",
+      "torch_dtype": "bfloat16",
+      "meta": {
+        "source": "hub-fast-fetch"
+      },
+      "added_at": "2026-07-06T23:44:57+00:00"
+    },
+    {
+      "model_id": "codellama/CodeLlama-7b-hf",
+      "family": "codellama",
+      "file": "codellama__CodeLlama-7b-hf.json.gz",
+      "revision": "",
+      "core_shape": [
+        4096,
+        32,
+        32,
+        32,
+        11008
+      ],
+      "n_layers": 32,
+      "inventory_hash": "0c4cf5608b80fd40a8a5f2475fd85a5507e5986f5ffedda16a4e389f1bac973f",
+      "tokenizer_hash": "dcb4337ba92f948b322e080f8b59a2a21cfe65dc2aa7ecf7df080ae8aa63c157",
+      "torch_dtype": "bfloat16",
+      "meta": {
+        "source": "hub-fast-fetch"
+      },
+      "added_at": "2026-07-07T02:07:16+00:00"
+    },
+    {
+      "model_id": "Qwen/Qwen2.5-Coder-7B-Instruct",
+      "family": "qwen2.5",
+      "file": "Qwen__Qwen2.5-Coder-7B-Instruct.json.gz",
+      "revision": "",
+      "core_shape": [
+        3584,
+        28,
+        28,
+        4,
+        18944
+      ],
+      "n_layers": 28,
+      "inventory_hash": "57b5d0d904e4e04db13334a388118f03db76213614ff782edbdab514f95f8984",
+      "tokenizer_hash": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+      "torch_dtype": "bfloat16",
+      "meta": {
+        "source": "hub-fast-fetch"
+      },
+      "added_at": "2026-07-07T03:53:40+00:00"
+    },
+    {
+      "model_id": "cognitivecomputations/dolphin-2.9-llama3-8b",
+      "family": "cognitivecomputations",
+      "file": "cognitivecomputations__dolphin-2.9-llama3-8b.json.gz",
+      "revision": "",
+      "core_shape": [
+        4096,
+        32,
+        32,
+        8,
+        14336
+      ],
+      "n_layers": 32,
+      "inventory_hash": "214da35394c2d7dd710427c791cdfca42f592ad15a04b54e115de20ffe2100b3",
+      "tokenizer_hash": "d5cc7e95cd1b481f9a1cc7df5642b9bcfedd6cf31b1f97d8035069971b050c24",
+      "torch_dtype": "bfloat16",
+      "meta": {
+        "source": "hub-fast-fetch"
+      },
+      "added_at": "2026-07-07T06:55:04+00:00"
+    },
+    {
+      "model_id": "meta-llama/Meta-Llama-3-8B-Instruct",
+      "family": "llama-3",
+      "file": "meta-llama__Meta-Llama-3-8B-Instruct.json.gz",
+      "revision": "",
+      "core_shape": [
+        4096,
+        32,
+        32,
+        8,
+        14336
+      ],
+      "n_layers": 32,
+      "inventory_hash": "148376d067201b8bfd457bc4689268564df3859d2f945cedc211d637ffc6973d",
+      "tokenizer_hash": "e134af98b985517b4f068e3755ae90d4e9cd2d45d328325dc503f1c6b2d06cc7",
+      "torch_dtype": "bfloat16",
+      "meta": {
+        "source": "copied-from-local-db"
+      },
+      "added_at": "2026-07-07T07:37:34+00:00"
+    },
+    {
+      "model_id": "Qwen/Qwen2.5-7B-Instruct",
+      "family": "qwen2.5",
+      "file": "Qwen__Qwen2.5-7B-Instruct.json.gz",
+      "revision": "",
+      "core_shape": [
+        3584,
+        28,
+        28,
+        4,
+        18944
+      ],
+      "n_layers": 28,
+      "inventory_hash": "57b5d0d904e4e04db13334a388118f03db76213614ff782edbdab514f95f8984",
+      "tokenizer_hash": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+      "torch_dtype": "bfloat16",
+      "meta": {
+        "source": "copied-from-local-db"
+      },
+      "added_at": "2026-07-07T07:37:36+00:00"
+    },
+    {
+      "model_id": "Qwen/Qwen2.5-14B-Instruct",
+      "family": "qwen2.5",
+      "file": "Qwen__Qwen2.5-14B-Instruct.json.gz",
+      "revision": "",
+      "core_shape": [
+        5120,
+        48,
+        40,
+        8,
+        13824
+      ],
+      "n_layers": 48,
+      "inventory_hash": "d2256927aa1e2de2e18aeca87c08fcc6ec768877cb85623c394c31a65dfdf5bd",
+      "tokenizer_hash": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539",
+      "torch_dtype": "bfloat16",
+      "meta": {
+        "source": "copied-from-local-db"
+      },
+      "added_at": "2026-07-07T07:37:38+00:00"
+    },
+    {
+      "model_id": "mistralai/Mistral-7B-Instruct-v0.3",
+      "family": "mistral",
+      "file": "mistralai__Mistral-7B-Instruct-v0.3.json.gz",
+      "revision": "",
+      "core_shape": [
+        4096,
+        32,
+        32,
+        8,
+        14336
+      ],
+      "n_layers": 32,
+      "inventory_hash": "8623bb3d6a672303b4ee02b571d9640f1db3e78203b6f9906daa610ad3700ba6",
+      "tokenizer_hash": "e553af6fff7d7ad76e830608b218c5c0b0822998d5a1a96099a74cd3c1cb1a49",
+      "torch_dtype": "bfloat16",
+      "meta": {
+        "source": "copied-from-local-db"
+      },
+      "added_at": "2026-07-07T07:37:40+00:00"
+    },
+    {
+      "model_id": "google/gemma-2-9b-it",
+      "family": "gemma-2",
+      "file": "google__gemma-2-9b-it.json.gz",
+      "revision": "",
+      "core_shape": [
+        3584,
+        42,
+        16,
+        8,
+        14336
+      ],
+      "n_layers": 42,
+      "inventory_hash": "0c2233c9c973e3ee5793f3773f705550e04831be26c52b1480c128ab44fd58b9",
+      "tokenizer_hash": "3f289bc05132635a8bc7aca7aa21255efd5e18f3710f43e3cdb96bcd41be4922",
+      "torch_dtype": "bfloat16",
+      "meta": {
+        "source": "hub-fast-fetch"
+      },
+      "added_at": "2026-07-07T08:48:11+00:00"
+    },
+    {
+      "model_id": "google/gemma-2b-it",
+      "family": "gemma-2",
+      "file": "google__gemma-2b-it.json.gz",
+      "revision": "",
+      "core_shape": [
+        2048,
+        18,
+        8,
+        1,
+        16384
+      ],
+      "n_layers": 18,
+      "inventory_hash": "5d148876cec659381456b8349bc888b5c6fd4319708810967c623c48d0a8d186",
+      "tokenizer_hash": "c15eb04bc5ad609fb26533e8525302c5640a945e5f67f65b7c849900acda7d99",
+      "torch_dtype": "bfloat16",
+      "meta": {
+        "source": "hub-fast-fetch"
+      },
+      "added_at": "2026-07-07T08:50:19+00:00"
+    },
+    {
+      "model_id": "mlabonne/AlphaMonarch-7B",
+      "family": "mlabonne",
+      "file": "mlabonne__AlphaMonarch-7B.json.gz",
+      "revision": "",
+      "core_shape": [
+        4096,
+        32,
+        32,
+        8,
+        14336
+      ],
+      "n_layers": 32,
+      "inventory_hash": "18ec245452b6f683648df9f28dca602cbd6c4965c650046a0b473b25a77330f3",
+      "tokenizer_hash": "fc4f0bd70b3709312d9d1d9e5ba674794b6bc5abc17429897a540f93882f25fc",
+      "torch_dtype": "float16",
+      "meta": {
+        "source": "hub-fast-fetch"
+      },
+      "added_at": "2026-07-07T08:59:20+00:00"
+    },
+    {
+      "model_id": "upstage/SOLAR-10.7B-v1.0",
+      "family": "upstage",
+      "file": "upstage__SOLAR-10.7B-v1.0.json.gz",
+      "revision": "",
+      "core_shape": [
+        4096,
+        48,
+        32,
+        8,
+        14336
+      ],
+      "n_layers": 48,
+      "inventory_hash": "f27a38df3e03c93e6692bf3c70e2bb48b5ef9df52afc84bc819cbdee78eb2e8f",
+      "tokenizer_hash": "fc4f0bd70b3709312d9d1d9e5ba674794b6bc5abc17429897a540f93882f25fc",
+      "torch_dtype": "float16",
+      "meta": {
+        "source": "hub-fast-fetch"
+      },
+      "added_at": "2026-07-07T09:03:50+00:00"
+    },
+    {
+      "model_id": "TheBloke/Mistral-7B-v0.1-GPTQ",
+      "family": "thebloke",
+      "file": "TheBloke__Mistral-7B-v0.1-GPTQ.json.gz",
+      "revision": "",
+      "core_shape": [
+        4096,
+        32,
+        32,
+        8,
+        14336
+      ],
+      "n_layers": 32,
+      "inventory_hash": "2d8f7552b16a1c67e60f3cef0298dad03522f8d1409fca3cf4da09783541cfd8",
+      "tokenizer_hash": "cdce92069938e6540fec77069211fa6ec7ea3ab5eb123c3aadad50a6f0c1e496",
+      "torch_dtype": "bfloat16",
+      "meta": {
+        "source": "hub-fast-fetch"
+      },
+      "added_at": "2026-07-07T09:04:06+00:00"
+    }
+  ]
+}
