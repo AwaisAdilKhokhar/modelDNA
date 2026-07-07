@@ -9,8 +9,12 @@ the CDN serves without us ever downloading the shard.
 from __future__ import annotations
 
 import os
+import random
+import threading
+import time
 from abc import ABC, abstractmethod
 from pathlib import Path
+from urllib.parse import urljoin
 
 
 class SourceError(RuntimeError):
@@ -26,6 +30,10 @@ class ModelSource(ABC):
     #: running total of payload bytes fetched, for the traffic report
     bytes_read: int = 0
 
+    #: True when reads cross the network — callers use this to decide
+    #: whether planning/prefetching reads up front is worth it
+    is_remote: bool = False
+
     @abstractmethod
     def list_files(self) -> list[str]: ...
 
@@ -35,6 +43,14 @@ class ModelSource(ABC):
 
     @abstractmethod
     def size(self, filename: str) -> int: ...
+
+    def read_ranges(self, filename: str, ranges: list[tuple[int, int]]) -> list[bytes]:
+        """Read many byte ranges of one file; results match input order.
+
+        The base implementation is a sequential loop; remote sources
+        override it to issue the requests concurrently.
+        """
+        return [self.read_range(filename, s, e) for s, e in ranges]
 
     def read_file(self, filename: str) -> bytes:
         return self.read_range(filename, 0, self.size(filename))
@@ -74,20 +90,46 @@ class LocalSource(ModelSource):
 class HubSource(ModelSource):
     """Hugging Face Hub repo accessed via HTTP range requests.
 
-    File listing goes through the Hub API; byte reads hit the
-    ``/resolve/`` endpoint with a Range header, which redirects to the CDN
-    and costs only the bytes requested.
+    File listing goes through the Hub API. Byte reads resolve the
+    ``/resolve/`` redirect once per file, cache the signed CDN URL, and then
+    hit the CDN directly — one HTTP exchange per read instead of two. Batch
+    reads (``read_ranges``) run over a thread pool, which is what makes
+    sparse fingerprint extraction latency-bound work finish in minutes
+    instead of hours.
     """
 
-    def __init__(self, repo_id: str, revision: str = "main", token: str | None = None):
+    is_remote = True
+
+    _REDIRECT_STATUS = (301, 302, 303, 307, 308)
+    _RETRY_STATUS = (429, 500, 502, 503, 504)
+    _MAX_ATTEMPTS = 4
+    _TIMEOUT = (10, 60)  # connect, read (seconds)
+
+    def __init__(
+        self,
+        repo_id: str,
+        revision: str = "main",
+        token: str | None = None,
+        concurrency: int | None = None,
+    ):
         import requests
+        from requests.adapters import HTTPAdapter
 
         self.repo_id = repo_id
         self.revision = revision
         self.name = repo_id
+        if concurrency is None:
+            concurrency = int(os.environ.get("MODELDNA_HTTP_CONCURRENCY", "32"))
+        self.concurrency = max(1, concurrency)
         self._session = requests.Session()
+        # default pool is 10 connections; size it to the worker count
+        self._session.mount(
+            "https://", HTTPAdapter(pool_connections=4, pool_maxsize=self.concurrency)
+        )
         self._files: list[str] | None = None
         self._sizes: dict[str, int] = {}
+        self._direct_urls: dict[str, str] = {}
+        self._lock = threading.Lock()
 
         if token is None:
             try:
@@ -97,11 +139,69 @@ class HubSource(ModelSource):
             except Exception:
                 token = os.environ.get("HF_TOKEN")
         self._token = token
-        if token:
-            self._session.headers["authorization"] = f"Bearer {token}"
 
     def _url(self, filename: str) -> str:
         return f"https://huggingface.co/{self.repo_id}/resolve/{self.revision}/{filename}"
+
+    def _auth_headers(self, url: str) -> dict[str, str]:
+        # The token authenticates against the Hub only. CDN URLs carry their
+        # own signature, and forwarding the bearer token to another host
+        # would leak it (requests strips it on cross-host redirects for the
+        # same reason).
+        if self._token and url.startswith("https://huggingface.co/"):
+            return {"authorization": f"Bearer {self._token}"}
+        return {}
+
+    def _request(
+        self,
+        method: str,
+        url: str,
+        headers: dict[str, str] | None = None,
+        allow_redirects: bool = True,
+    ):
+        import requests
+
+        h = dict(headers or {})
+        h.update(self._auth_headers(url))
+        last: Exception | str = "no attempt made"
+        for attempt in range(self._MAX_ATTEMPTS):
+            if attempt:
+                time.sleep(min(8.0, 0.5 * 2 ** (attempt - 1)) + random.random() * 0.25)
+            try:
+                r = self._session.request(
+                    method, url, headers=h,
+                    allow_redirects=allow_redirects, timeout=self._TIMEOUT,
+                )
+            except requests.RequestException as e:
+                # covers timeouts, refused/reset connections, and mid-body
+                # breaks (ChunkedEncodingError/IncompleteRead) — all
+                # transient at the transport level, all worth retrying
+                last = e
+                continue
+            if r.status_code not in self._RETRY_STATUS:
+                return r
+            last = f"HTTP {r.status_code}"
+        raise SourceError(
+            f"{method.upper()} {url} failed after {self._MAX_ATTEMPTS} attempts: {last}"
+        )
+
+    def _direct_url(self, filename: str) -> str:
+        """CDN URL for a file, resolving the /resolve/ redirect once."""
+        with self._lock:
+            cached = self._direct_urls.get(filename)
+        if cached:
+            return cached
+        resolve = self._url(filename)
+        r = self._request("head", resolve, allow_redirects=False)
+        if r.status_code in self._REDIRECT_STATUS:
+            url = urljoin(resolve, r.headers["location"])
+        elif r.status_code == 200:
+            url = resolve  # small non-LFS file, served by the Hub directly
+        else:
+            raise SourceError(f"HEAD {filename} on {self.repo_id}: HTTP {r.status_code}")
+        with self._lock:
+            self._direct_urls[filename] = url
+        return url
 
     def list_files(self) -> list[str]:
         if self._files is None:
@@ -124,7 +224,7 @@ class HubSource(ModelSource):
 
     def size(self, filename: str) -> int:
         if filename not in self._sizes:
-            r = self._session.head(self._url(filename), allow_redirects=True, timeout=30)
+            r = self._request("head", self._url(filename))
             if r.status_code != 200:
                 raise SourceError(f"HEAD {filename} on {self.repo_id}: HTTP {r.status_code}")
             self._sizes[filename] = int(r.headers["content-length"])
@@ -134,15 +234,31 @@ class HubSource(ModelSource):
         if end <= start:
             return b""
         headers = {"Range": f"bytes={start}-{end - 1}"}
-        r = self._session.get(self._url(filename), headers=headers, timeout=120)
+        r = self._request("get", self._direct_url(filename), headers=headers)
+        if r.status_code in (401, 403, 404):
+            # signed CDN URLs expire; drop the cached one and re-resolve once
+            with self._lock:
+                self._direct_urls.pop(filename, None)
+            r = self._request("get", self._direct_url(filename), headers=headers)
         if r.status_code not in (200, 206):
             raise SourceError(f"GET {filename} on {self.repo_id}: HTTP {r.status_code}")
         data = r.content
         if r.status_code == 200 and len(data) > end - start:
             # server ignored the Range header; take what we asked for
             data = data[start:end]
-        self.bytes_read += len(data)
+        with self._lock:
+            self.bytes_read += len(data)
         return data
+
+    def read_ranges(self, filename: str, ranges: list[tuple[int, int]]) -> list[bytes]:
+        if len(ranges) <= 1 or self.concurrency <= 1:
+            return [self.read_range(filename, s, e) for s, e in ranges]
+        self._direct_url(filename)  # resolve once before the pool races on it
+        from concurrent.futures import ThreadPoolExecutor
+
+        workers = min(self.concurrency, len(ranges))
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            return list(pool.map(lambda se: self.read_range(filename, se[0], se[1]), ranges))
 
 
 def open_source(target: str, revision: str = "main") -> ModelSource:
