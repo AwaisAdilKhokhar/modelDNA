@@ -28,9 +28,10 @@ by hand. The detection methods are published and validated — modelDNA
 packages them into one command.
 
 **[🧬 Explore the Atlas](https://awaisadilkhokhar.github.io/modelDNA/)** — an
-interactive family tree of 48 real Hub models reconstructed from weight
+interactive family tree of 55 real Hub models reconstructed from weight
 evidence alone: hover any edge for the σ-curve, sample-cosine, and spectral
-evidence behind it. Regenerate it yourself with `python scripts/build_atlas.py`.
+evidence behind it — including the two decomposed merges, drawn as purple
+edges labeled with their fitted mixture weights. Regenerate it yourself with `python scripts/build_atlas.py`.
 
 **[🔬 Scan a model live](https://huggingface.co/spaces/AwaisAdilKhokhar/modelDNA)** —
 paste a Hub repo id into the hosted scanner and get a verdict in a minute or
@@ -59,6 +60,10 @@ modeldna scan mistralai/Mistral-7B-Instruct-v0.3
 
 # test a specific hypothesis pair (the Pangu/Qwen workflow)
 modeldna compare suspect-org/model Qwen/Qwen2.5-14B
+
+# what's actually in this merge? estimate the parent mixture
+modeldna decompose org/mystery-merge org/hermes-ft org/dolphin-ft \
+    --base mistralai/Mistral-7B-v0.1 --layers --mergekit
 
 # machine-readable output, HTML evidence report
 modeldna scan org/model --json
@@ -106,6 +111,65 @@ A logistic model over the evidence vector produces the calibrated
 probability, and every reported number ships with the unrelated-pair
 background distribution measured on the DB itself, because a bare "0.93"
 convinces nobody.
+
+### Merge decomposition
+
+Merges are the hard case for lineage — and the question the model-merging
+community actually asks is "what's *in* this merge?". `modeldna decompose`
+answers it from fingerprints alone:
+
+```
+$ modeldna decompose org/mystery-merge org/hermes-ft org/dolphin-ft --base mistralai/Mistral-7B-v0.1
+
+  MERGE  weights are consistent with a multi-parent merge of the given parents
+
+  candidate                    weight   ± roles   F2 check
+  org/hermes-ft                +0.650     0.003      0.646
+  org/dolphin-ft               +0.350     0.003      0.353
+  mistralai/Mistral-7B (base)  +0.000     0.001     -0.001
+
+  reconstruction cosine 0.99999   best single candidate org/hermes-ft at 0.99977
+  mixture removes 94.0% of the residual the best single candidate leaves
+```
+
+The math: mergekit's mainstream methods — linear, slerp, task arithmetic,
+TIES/DARE — all produce per-tensor weights that are (near-)linear
+combinations of the parents, and PCS sample positions are pure functions of
+(seed, role, layer, tensor size), so the same identity holds on the sampled
+elements. Mixture weights fall out of a least-squares fit on data the
+fingerprints already contain. Because merge parents are usually fine-tunes
+of one base (raw cosine 0.99+, hopelessly collinear), the fit is constrained
+to sum to one — algebraically a regression in *task-vector space*, where
+fine-tune directions are nearly orthogonal and the system is
+well-conditioned.
+
+**Validated against real published mergekit configs**
+(`benchmarks/merge_decompose_bench.py`, fingerprints cached in the repo):
+
+- `mlabonne/NeuralPipe-7B-slerp` — the per-layer fit recovers the model
+  card's *opposite* attention/MLP t-curves (anchors `[0, .5, .3, .7, 1]` and
+  the reverse) at **r = 0.999** (attention) and 0.97 (MLP); the only
+  deviations sit at layers where the parents are near-identical, i.e. where
+  the weight is mathematically unidentifiable.
+- `mlabonne/Monarch-7B` — a dare_ties merge; fitted weights
+  **0.371 / 0.347 / 0.291** vs the published `0.36 / 0.34 / 0.30`
+  (max error 0.011), base column correctly ~0. The summary hedges to
+  AMBIGUOUS because the Beagle parents themselves share ancestry (task
+  vectors r = 0.987 — the collinearity warning fires), and DARE
+  sparsification bounds the residual shrink: the weights are right, and the
+  hedge is the tool being honest about what the weights alone can prove.
+- Chain closure: `mlabonne/AlphaMonarch-7B` puts **α = 1.000** on its true
+  ancestor Monarch-7B once Monarch is in the candidate list, and 0 on the
+  decoys.
+
+What you get beyond the weights: a per-layer mixture profile (`--layers`;
+gradient/slerp merges show as depth-varying α), an optional base column
+(`--base`) that absorbs un-finetuned mass so task-arithmetic and low-density
+DARE merges decompose cleanly, an independent cross-check fitted on the 1-D
+norm vectors (F2), a residual statistic that separates "exact merge" from
+"merge + fine-tune", and `--mergekit` to print the nearest linear mergekit
+config for the fitted mixture. Parents already in the reference DB are not
+re-downloaded.
 
 ### Verdict classes
 
@@ -230,8 +294,12 @@ without touching the Hub.
 - **Distillation is invisible** to weight forensics by construction; every
   weight-space method fails on it. Behavioral methods are on the roadmap and
   will be labeled experimental.
-- **Merges are flagged (`LIKELY_MERGE`), not attributed.** Multi-parent
-  decomposition lands in v0.2.
+- **Merge attribution needs a candidate list.** `modeldna decompose`
+  estimates mixture weights for parents you name; a scan alone flags
+  `LIKELY_MERGE` but cannot enumerate parents the DB has never seen.
+  TIES/DARE sparsification and post-merge fine-tuning show up as residual,
+  not as exact weights; depth-changing merges (passthrough / frankenmerge)
+  are rejected, not decomposed.
 - **Adversarial robustness is bounded.** Deliberate permutation/rotation
   re-parameterization defeats direct-similarity signals (F1–F3); spectral
   invariants (F4) are the counter, and the report surfaces "low direct
@@ -258,6 +326,12 @@ print(res.to_dict())
 
 fp_a, fp_b, evidence, verdict = compare_pair("org/suspect", "org/alleged-parent")
 print(evidence.sigma_r, evidence.pcs_cos_mean)
+
+from modeldna.merge import decompose_targets
+
+dec = decompose_targets("org/mystery-merge", ["org/parent-a", "org/parent-b"],
+                        base="org/shared-base", db=ReferenceDB())
+print(dec.summary, dec.alphas, dec.gain_vs_single)
 ```
 
 ## Development
