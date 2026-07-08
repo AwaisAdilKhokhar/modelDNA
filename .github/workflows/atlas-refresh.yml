@@ -1,0 +1,57 @@
+# Weekly refresh of the two public artifacts derived from the fingerprint
+# sources: the Atlas page (site/index.html, deployed by pages.yml on push)
+# and the HF dataset (fingerprint DB + inferred graph at
+# https://huggingface.co/datasets/AwaisAdilKhokhar/modeldna-atlas).
+#
+# Fingerprint sources on the runner: `modeldna db pull` installs the
+# published reference DB; the LineageBench/mergebench caches are committed.
+# This is also the hook for the auto-growing Atlas: a future step that
+# fingerprints trending Hub models into the DB slots in before the builds.
+#
+# Needs an HF_TOKEN repo secret with WRITE access (the dataset push).
+name: atlas-refresh
+
+on:
+  schedule:
+    - cron: "30 5 * * 1" # Mondays 05:30 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write # push the regenerated site/index.html
+
+concurrency:
+  group: atlas-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e . huggingface_hub
+      - name: Pull reference DB
+        run: modeldna db pull
+      - name: Rebuild Atlas
+        run: python scripts/build_atlas.py
+      - name: Build and push dataset
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python scripts/export_dataset.py --push
+      - name: Commit refreshed Atlas
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add site/index.html
+          if git diff --cached --quiet; then
+            echo "Atlas unchanged; nothing to commit"
+          else
+            git commit -m "atlas: weekly refresh"
+            git push
+          fi

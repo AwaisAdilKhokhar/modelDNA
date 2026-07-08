@@ -37,6 +37,11 @@ edges labeled with their fitted mixture weights. Regenerate it yourself with `py
 paste a Hub repo id into the hosted scanner and get a verdict in a minute or
 two, no install needed.
 
+**[📊 Build on the data](https://huggingface.co/datasets/AwaisAdilKhokhar/modeldna-atlas)** —
+the fingerprint DB and inferred lineage graph behind the Atlas, published as
+a Hugging Face dataset (`models` / `edges` / `pairs` configs plus the raw
+fingerprints and the pullable reference DB), refreshed weekly by CI.
+
 ## Install
 
 ```
