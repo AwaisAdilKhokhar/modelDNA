@@ -39,7 +39,9 @@ from modeldna.db.store import ReferenceDB
 from modeldna.io.safetensors import SafetensorsError
 from modeldna.io.source import SourceError
 from modeldna.io.weights import WeightIndexError
+from modeldna.merge import decompose_targets
 from modeldna.report.html import _CONSISTENCY_COLOR, _VERDICT_COLOR, render_html
+from modeldna.report.terminal import mergekit_yaml
 from modeldna.scan import scan
 
 REPO_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9._-]+$")
@@ -61,6 +63,17 @@ _SIGNALS = [
 
 #: (repo@revision, db_version) -> (result dict, elapsed seconds)
 _CACHE: dict[str, tuple[dict, float]] = {}
+
+#: decompose: cap candidate models per request (each costs a ~300 MB read)
+MAX_PARENTS = 4
+_DEC_CACHE: dict[str, tuple[dict, float]] = {}
+
+_SUMMARY_COLOR = {
+    "MERGE": "#8e44ad",
+    "SINGLE_PARENT": "#b7950b",
+    "AMBIGUOUS": "#2471a3",
+    "UNEXPLAINED": "#1e8449",
+}
 
 
 def ensure_db() -> ReferenceDB:
@@ -258,6 +271,119 @@ def do_scan(repo_id: str, revision: str, progress=gr.Progress()):
     return _result_html(d, elapsed, cached=False)
 
 
+def _decompose_html(dec: dict, elapsed: float, cached: bool) -> str:
+    color = _SUMMARY_COLOR.get(dec["summary"], "#566573")
+    parts = [
+        "<div class='mdna-card'>",
+        f"<div class='mdna-eyebrow'>MIXTURE — {html.escape(dec['target_id'])}</div>",
+        f"<div class='mdna-verdict' style='background:{color}'>"
+        f"<b>{html.escape(dec['summary'])}</b></div>",
+        f"<p class='mdna-desc'>{html.escape(dec.get('description', ''))}</p>",
+    ]
+
+    ordered = sorted(dec["parent_ids"], key=lambda p: -dec["alphas"][p])
+    if dec.get("base_id"):
+        ordered.append(dec["base_id"])
+    rows = []
+    for cid in ordered:
+        label = html.escape(cid) + (
+            " <span class='mdna-dim'>(base)</span>" if cid == dec.get("base_id") else ""
+        )
+        f2 = dec.get("f2_alphas", {}).get(cid)
+        rows.append([
+            label,
+            f"<b>{dec['alphas'][cid]:+.3f}</b>",
+            _fmt(dec.get("alpha_spread", {}).get(cid)),
+            _fmt(f2),
+        ])
+    parts.append(_table(
+        [("candidate", False), ("weight", True), ("± roles", True),
+         ("F2 check", True)],
+        rows,
+    ))
+
+    parts.append(
+        "<p class='mdna-claims'>reconstruction cosine "
+        f"<b>{dec['recon_cos']:.5f}</b> · best single candidate "
+        f"{html.escape(dec['best_single'])} at {dec['best_single_cos']:.5f}<br>"
+        f"<span class='mdna-dim'>the mixture removes "
+        f"{max(dec['gain_vs_single'], 0) * 100:.1f}% of the residual the best "
+        f"single candidate leaves ({dec['n_samples']:,} sampled elements)</span></p>"
+    )
+
+    for n in dec.get("notes", []):
+        parts.append(f"<p class='mdna-dim mdna-note'>note: {html.escape(n)}</p>")
+
+    if dec.get("mergekit_yaml"):
+        parts.append(
+            "<details class='mdna-details'><summary>Nearest linear mergekit config"
+            f"</summary><pre>{html.escape(dec['mergekit_yaml'])}</pre></details>"
+        )
+    parts.append(
+        "<details class='mdna-details'><summary>Raw JSON</summary>"
+        f"<pre>{html.escape(json.dumps(dec, indent=1))}</pre></details>"
+    )
+
+    stamp = (
+        f"fast mode · {elapsed:.0f} s · reference DB v{DB.version} · "
+        f"modeldna {__version__}"
+    )
+    if cached:
+        stamp = "cached result · " + stamp
+    parts.append(f"<div class='mdna-stamp'>{stamp}</div></div>")
+    return "".join(parts)
+
+
+def do_decompose(target: str, parents_raw: str, base: str, progress=gr.Progress()):
+    target = (target or "").strip().strip("/")
+    base = (base or "").strip().strip("/") or None
+    parents = [p.strip().strip("/") for p in re.split(r"[,\s]+", parents_raw or "") if p.strip()]
+
+    if not REPO_RE.match(target):
+        raise gr.Error("enter the merge's Hub repo id like `org/model-name`")
+    for p in parents + ([base] if base else []):
+        if not REPO_RE.match(p):
+            raise gr.Error(f"{p!r} doesn't look like a Hub repo id (org/model-name)")
+    if len(parents) < 2:
+        raise gr.Error("give at least two candidate parents (comma or space separated)")
+    if len(parents) > MAX_PARENTS:
+        raise gr.Error(f"at most {MAX_PARENTS} candidate parents per request on this Space")
+    if len(set(parents + [target] + ([base] if base else []))) != len(parents) + 1 + bool(base):
+        raise gr.Error("target, parents, and base must all be different repos")
+
+    key = "|".join([target] + sorted(parents) + [base or ""]) + f"#db{DB.version}"
+    if key in _DEC_CACHE:
+        d, elapsed = _DEC_CACHE[key]
+        return _decompose_html(d, elapsed, cached=True)
+
+    todo = [target] + parents + ([base] if base else [])
+    fetches = [r for r in todo if DB.get(r) is None]
+    for i, repo in enumerate(todo):
+        progress(0.02 + 0.06 * i / len(todo), desc=f"checking {repo} on the Hub")
+        _preflight(repo, "main")
+    progress(
+        0.1,
+        desc=f"fingerprinting {len(fetches)} model(s) "
+        f"({len(todo) - len(fetches)} already in the reference DB) — "
+        "roughly a minute per 7B",
+    )
+
+    t0 = time.time()
+    try:
+        dec = decompose_targets(target, parents, base=base, db=DB, mode="fast")
+    except READ_ERRORS as e:
+        raise gr.Error(f"could not read weights: {e}")
+    except ValueError as e:
+        raise gr.Error(str(e))
+    elapsed = time.time() - t0
+
+    progress(0.95, desc="rendering")
+    d = dec.to_dict()
+    d["mergekit_yaml"] = mergekit_yaml(dec)
+    _DEC_CACHE[key] = (d, elapsed)
+    return _decompose_html(d, elapsed, cached=False)
+
+
 CSS = """
 .gradio-container { max-width: 1000px !important; margin: 0 auto !important; }
 footer { display: none !important; }
@@ -303,10 +429,11 @@ footer { display: none !important; }
   font-size: 15px; line-height: 1.55; text-wrap: balance; }
 .mdna-thesis b { color: var(--mdna-ink); }
 
-/* scan button */
-#mdna-scan { background: var(--mdna-accent) !important; color: #fff !important;
-  border: none !important; box-shadow: none !important; }
-#mdna-scan:hover { filter: brightness(1.08); }
+/* scan / decompose buttons */
+#mdna-scan, #mdna-decompose { background: var(--mdna-accent) !important;
+  color: #fff !important; border: none !important; box-shadow: none !important; }
+#mdna-scan:hover, #mdna-decompose:hover { filter: brightness(1.08); }
+#mdna-decompose { align-self: end; }
 
 /* result card */
 .mdna-card { border: 1px solid var(--mdna-grid); border-radius: 14px;
@@ -407,25 +534,69 @@ EXAMPLES = [
     ["cognitivecomputations/dolphin-2.9-llama3-8b"],
 ]
 
+#: real merges validated against their published mergekit configs
+#: (benchmarks/merge_decompose_bench.py in the repo)
+DECOMPOSE_EXAMPLES = [
+    ["mlabonne/NeuralPipe-7B-slerp",
+     "OpenPipe/mistral-ft-optimized-1218, mlabonne/NeuralHermes-2.5-Mistral-7B",
+     ""],
+    ["mlabonne/Monarch-7B",
+     "mlabonne/OmniTruthyBeagle-7B-v0, mlabonne/NeuBeagle-7B, "
+     "mlabonne/NeuralOmniBeagle-7B",
+     "mistralai/Mistral-7B-v0.1"],
+]
+
 with gr.Blocks(title="modelDNA — lineage scanner") as demo:
     gr.HTML(HEADER)
-    with gr.Row():
-        repo_in = gr.Textbox(
-            label="Hub repo id",
-            placeholder="org/model — e.g. HuggingFaceH4/zephyr-7b-beta",
-            scale=5,
+    with gr.Tab("Scan"):
+        with gr.Row():
+            repo_in = gr.Textbox(
+                label="Hub repo id",
+                placeholder="org/model — e.g. HuggingFaceH4/zephyr-7b-beta",
+                scale=5,
+            )
+            rev_in = gr.Textbox(label="revision", value="main", scale=1)
+            scan_btn = gr.Button("Scan", variant="primary", scale=1,
+                                 elem_id="mdna-scan")
+        result_out = gr.HTML()
+        gr.Examples(examples=EXAMPLES, inputs=[repo_in])
+    with gr.Tab("Decompose a merge"):
+        gr.HTML(
+            "<p class='mdna-thesis'>Name a suspected <b>merge</b> and its "
+            "candidate parents; modelDNA fits the merged weights as a "
+            "sum-to-one mixture of the parents and reports each parent's "
+            "share — the estimated merge recipe, recovered from weights "
+            "alone. Both examples below are real merges whose fitted weights "
+            "match the mergekit config published on their model card.</p>"
         )
-        rev_in = gr.Textbox(label="revision", value="main", scale=1)
-        scan_btn = gr.Button("Scan", variant="primary", scale=1,
-                             elem_id="mdna-scan")
-    result_out = gr.HTML()
-    gr.Examples(examples=EXAMPLES, inputs=[repo_in])
+        dec_target_in = gr.Textbox(
+            label="merged model",
+            placeholder="org/suspected-merge",
+        )
+        with gr.Row():
+            dec_parents_in = gr.Textbox(
+                label=f"candidate parents (2–{MAX_PARENTS}, comma separated)",
+                placeholder="org/parent-a, org/parent-b",
+                scale=4,
+            )
+            dec_base_in = gr.Textbox(
+                label="shared base (optional)",
+                placeholder="org/base-model",
+                scale=2,
+            )
+            dec_btn = gr.Button("Decompose", variant="primary", scale=1,
+                                elem_id="mdna-decompose")
+        dec_out = gr.HTML()
+        gr.Examples(examples=DECOMPOSE_EXAMPLES,
+                    inputs=[dec_target_in, dec_parents_in, dec_base_in])
     gr.HTML(FOOTER)
 
     scan_btn.click(do_scan, inputs=[repo_in, rev_in], outputs=[result_out],
                    concurrency_limit=1)
     repo_in.submit(do_scan, inputs=[repo_in, rev_in], outputs=[result_out],
                    concurrency_limit=1)
+    dec_btn.click(do_decompose, inputs=[dec_target_in, dec_parents_in, dec_base_in],
+                  outputs=[dec_out], concurrency_limit=1)
 
 if __name__ == "__main__":
     demo.queue(max_size=32).launch(css=CSS)

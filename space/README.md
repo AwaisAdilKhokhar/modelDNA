@@ -20,6 +20,13 @@ descends from. When the evidence doesn't single out a parent, it abstains
 instead of guessing: the worst failure mode of a tool like this is a false
 accusation.
 
+The **Decompose a merge** tab answers the model-merging community's
+question — *what's actually in this merge?* Name a suspected merge and its
+candidate parents and modelDNA fits the merged weights as a sum-to-one
+mixture, reporting each parent's share, a per-signal cross-check, and the
+nearest linear mergekit config. The built-in examples are real merges whose
+fitted weights match the mergekit recipe published on their model cards.
+
 The reference DB of base-model fingerprints is pulled at startup from the
 [modelDNA GitHub releases](https://github.com/AwaisAdilKhokhar/modelDNA/releases);
 each scan then only reads the suspect model.
