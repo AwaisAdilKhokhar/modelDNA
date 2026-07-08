@@ -1,1 +1,1 @@
-modeldna @ git+https://github.com/AwaisAdilKhokhar/modelDNA.git
+modeldna @ git+https://github.com/AwaisAdilKhokhar/modelDNA.git@80aba3699ec377c22d8199e73ba28cfb5e5ad299
