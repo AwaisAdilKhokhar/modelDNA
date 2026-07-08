@@ -178,7 +178,8 @@ def judge(
         note = (
             "evidence exceeds the positive threshold for parents in different "
             f"families ({', '.join(sorted(families))}); multi-parent merge is "
-            "the most consistent explanation (full attribution lands in v0.2)"
+            "the most consistent explanation (estimate mixture weights with "
+            "`modeldna decompose <target> <parent> <parent> …`)"
         )
         return Verdict(VerdictClass.LIKELY_MERGE, best.probability, best, results, [note])
 

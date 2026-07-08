@@ -164,6 +164,56 @@ def compare(
 
 
 @app.command()
+def decompose(
+    target: str = typer.Argument(..., help="Suspected merge (repo id or local dir)."),
+    parents: list[str] = typer.Argument(..., help="Two or more candidate parents."),
+    base: Optional[str] = typer.Option(None, "--base", help="Shared base model; adds "
+                                       "a column that absorbs un-finetuned weight "
+                                       "(task-arithmetic / low-density merges)."),
+    full: bool = typer.Option(False, "--full", help="Use complete tensors."),
+    layers: bool = typer.Option(False, "--layers", help="Show per-layer mixture "
+                                "weights (gradient/slerp merges vary by depth)."),
+    mergekit: bool = typer.Option(False, "--mergekit", help="Print the nearest "
+                                  "linear mergekit config for the fitted mixture."),
+    json_out: bool = typer.Option(False, "--json", help="Machine-readable output."),
+    db_path: Optional[Path] = typer.Option(None, "--db", help="Reference DB "
+                                           "directory (parents found there are "
+                                           "not re-downloaded)."),
+    revision: str = typer.Option("main", "--revision"),
+):
+    """Estimate the parent mixture of a merged model.
+
+    Fits TARGET's sampled weights as a sum-to-one combination of the given
+    PARENTS (plus the optional --base) and reports the mixture weights, fit
+    quality, and per-layer profile — the "what's actually in this merge?"
+    question, answered from weights alone.
+    """
+    from modeldna.merge import decompose_targets
+
+    try:
+        dec = decompose_targets(
+            target, list(parents), base=base, db=ReferenceDB(db_path),
+            mode=_mode(full), revision=revision,
+        )
+    except READ_ERRORS as e:
+        _fail(str(e))
+    except ValueError as e:
+        _fail(str(e))
+
+    d = dec.to_dict()
+    _save_scan(f"decompose {target}", d)
+    if json_out:
+        console.print_json(json.dumps(d))
+    else:
+        from modeldna.report.terminal import mergekit_yaml, print_decompose
+
+        print_decompose(dec, show_layers=layers, console=console)
+        if mergekit:
+            console.print()
+            console.print(mergekit_yaml(dec), highlight=False)
+
+
+@app.command()
 def fingerprint(
     target: str = typer.Argument(..., help="Hub repo id or local model dir."),
     output: Path = typer.Option(Path("fingerprint.json"), "-o", "--output",

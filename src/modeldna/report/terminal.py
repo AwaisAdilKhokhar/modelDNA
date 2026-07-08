@@ -8,6 +8,7 @@ from rich.table import Table
 from rich.text import Text
 
 from modeldna.compare import Evidence
+from modeldna.merge import MergeDecomposition
 from modeldna.scan import ScanResult
 from modeldna.verdict import DESCRIPTIONS, Verdict, VerdictClass
 
@@ -31,8 +32,9 @@ _CONSISTENCY_STYLE = {
 }
 
 LIMITATIONS = (
-    "Limitations: statistical evidence, not proof. Merges are flagged, not "
-    "attributed; distillation is undetectable from weights by construction; "
+    "Limitations: statistical evidence, not proof. Merges are flagged here; "
+    "`modeldna decompose` estimates mixture weights when candidate parents are "
+    "known; distillation is undetectable from weights by construction; "
     "determined adversarial re-parameterization can defeat direct-similarity "
     "signals (spectral signals are the countermeasure and are reported "
     "separately). Findings are statements of statistical consistency, never "
@@ -129,6 +131,85 @@ def print_scan(result: ScanResult, top_k: int = 3, console: Console | None = Non
         f"{mb:.1f} MB downloaded | modelDNA {result.tool_version}[/dim]"
     )
     console.print(f"[dim]{LIMITATIONS}[/dim]")
+
+
+_SUMMARY_STYLE = {
+    "MERGE": "bold magenta",
+    "SINGLE_PARENT": "bold yellow",
+    "AMBIGUOUS": "bold cyan",
+    "UNEXPLAINED": "bold green",
+}
+
+
+def print_decompose(
+    dec: MergeDecomposition,
+    show_layers: bool = False,
+    console: Console | None = None,
+) -> None:
+    console = console or Console()
+    head = Text()
+    head.append(dec.summary, style=_SUMMARY_STYLE[dec.summary])
+    head.append(f"  {dec.description}", style="bold")
+    console.print(Panel(head, title=f"modelDNA decompose · {dec.target_id}"))
+
+    t = Table(title="Mixture fit (sum-to-one least squares on F3 samples)",
+              title_justify="left", show_edge=False)
+    t.add_column("candidate")
+    t.add_column("weight", justify="right")
+    t.add_column("± roles", justify="right", style="dim")
+    t.add_column("F2 check", justify="right", style="dim")
+    ordered = sorted(dec.parent_ids, key=lambda p: -dec.alphas[p])
+    if dec.base_id:
+        ordered.append(dec.base_id)
+    for cid in ordered:
+        label = f"{cid} [dim](base)[/dim]" if cid == dec.base_id else cid
+        t.add_row(
+            label,
+            f"{dec.alphas[cid]:+.3f}",
+            _fmt(dec.alpha_spread.get(cid)),
+            _fmt(dec.f2_alphas.get(cid)),
+        )
+    console.print(t)
+
+    console.print(
+        f"\nreconstruction cosine [bold]{dec.recon_cos:.5f}[/bold]   "
+        f"best single candidate {dec.best_single} at {dec.best_single_cos:.5f}"
+    )
+    console.print(
+        f"mixture removes [bold]{max(dec.gain_vs_single, 0.0) * 100:.1f}%[/bold] of the "
+        f"residual the best single candidate leaves "
+        f"[dim]({dec.n_samples:,} sampled elements)[/dim]"
+    )
+
+    if show_layers and dec.per_layer:
+        lt = Table(title="Per-layer mixture", title_justify="left", show_edge=False)
+        lt.add_column("layer", justify="right")
+        for cid in ordered:
+            lt.add_column(cid.split("/")[-1], justify="right")
+        n_layers = len(next(iter(dec.per_layer.values())))
+        for layer in range(n_layers):
+            lt.add_row(str(layer),
+                       *(f"{dec.per_layer[cid][layer]:+.2f}" for cid in ordered))
+        console.print()
+        console.print(lt)
+
+    for note in dec.notes:
+        console.print(f"[yellow]note[/yellow] {note}")
+    console.print(f"\n[dim]{LIMITATIONS}[/dim]")
+
+
+def mergekit_yaml(dec: MergeDecomposition) -> str:
+    """An equivalent `merge_method: linear` mergekit config for the fitted mix."""
+    lines = ["# nearest linear mergekit config fitted by modeldna decompose",
+             "merge_method: linear", "models:"]
+    for cid in dec.parent_ids:
+        lines += [f"  - model: {cid}", "    parameters:",
+                  f"      weight: {dec.alphas[cid]:.4f}"]
+    if dec.base_id:
+        lines += [f"  - model: {dec.base_id}  # shared base", "    parameters:",
+                  f"      weight: {dec.alphas[dec.base_id]:.4f}"]
+    lines.append("dtype: bfloat16")
+    return "\n".join(lines) + "\n"
 
 
 def print_compare(

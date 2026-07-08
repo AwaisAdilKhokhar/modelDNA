@@ -119,6 +119,44 @@ def test_compare(env):
     assert "NO_MATCH" in r.output
 
 
+def test_decompose(env):
+    base_w = make_tiny_llama(env / "mbase", seed=100, **DIMS)
+    import numpy as np
+
+    rng1, rng2 = np.random.default_rng(101), np.random.default_rng(102)
+    p1_w = {k: v + rng1.normal(0, 0.004, v.shape).astype(np.float32)
+            for k, v in base_w.items()}
+    p2_w = {k: v + rng2.normal(0, 0.004, v.shape).astype(np.float32)
+            for k, v in base_w.items()}
+    make_tiny_llama(env / "p1", base_weights=p1_w, **DIMS)
+    make_tiny_llama(env / "p2", base_weights=p2_w, **DIMS)
+    merged = {k: 0.7 * p1_w[k] + 0.3 * p2_w[k] for k in p1_w}
+    make_tiny_llama(env / "merged", base_weights=merged, **DIMS)
+
+    # one parent from the DB, one from disk, mergekit YAML + layers table
+    _add(env, "p1", "local/p1", "test-family")
+    r = runner.invoke(app, [
+        "decompose", str(env / "merged"), "local/p1", str(env / "p2"),
+        "--layers", "--mergekit",
+    ])
+    assert r.exit_code == 0, r.output
+    assert "MERGE" in r.output
+    assert "merge_method: linear" in r.output
+    assert "Per-layer mixture" in r.output
+
+    r = runner.invoke(app, [
+        "decompose", str(env / "merged"), "local/p1", str(env / "p2"), "--json",
+    ])
+    d = json.loads(r.output)
+    assert d["summary"] == "MERGE"
+    assert abs(d["alphas"]["local/p1"] - 0.7) < 0.05
+
+    # single candidate -> clean error pointing at `compare`
+    r = runner.invoke(app, ["decompose", str(env / "merged"), "local/p1"])
+    assert r.exit_code == 1
+    assert "compare" in r.output
+
+
 def test_fingerprint_export(env, tmp_path):
     out = tmp_path / "fp.json"
     r = runner.invoke(app, ["fingerprint", str(env / "base"), "-o", str(out)])
