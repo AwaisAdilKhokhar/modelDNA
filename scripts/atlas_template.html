@@ -130,6 +130,13 @@ section .sub{margin:0 0 18px;color:var(--ink-2);max-width:72ch}
   border-radius:7px;background:var(--card);font-size:12.5px;min-height:58px}
 #cellTip .num{font-family:ui-monospace,Consolas,monospace}
 
+/* -- merge recipes ------------------------------------------------------ */
+.abar{display:inline-block;width:110px;height:9px;border-radius:5px;
+  background:var(--grid);vertical-align:middle;margin-right:9px;overflow:hidden}
+.abar i{display:block;height:100%;background:var(--merge)}
+tr.mhead td{background:var(--plane);padding-top:13px}
+td.mnote{font-size:12px;padding-top:4px}
+
 /* -- scoreboard --------------------------------------------------------- */
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
   gap:12px;margin-bottom:18px}
@@ -219,6 +226,19 @@ footer p{max-width:88ch}
 </section>
 
 <section>
+  <p class="eyebrow">merge forensics</p>
+  <h2>Merge decomposition &mdash; recipes recovered from weights alone</h2>
+  <p class="sub">A merged model's weights are a (near-)linear mixture of its
+  parents, so the mixture can be refit from sampled weights. For these two real
+  merges the fitted weights match the mergekit recipe published on the model
+  card &mdash; the recipe was recovered blind, then checked against the card.
+  The purple edges in the constellation above carry the same weights;
+  reproduce with <code>modeldna decompose</code> or
+  <code>benchmarks/merge_decompose_bench.py</code>.</p>
+  <div class="tbl-wrap"><table class="pairs" id="mergesTbl"></table></div>
+</section>
+
+<section>
   <p class="eyebrow">ground truth</p>
   <h2>LineageBench &mdash; verified against the publishers' own records</h2>
   <p class="sub">Real Hub models whose parentage is documented by the publishing
@@ -231,8 +251,8 @@ footer p{max-width:88ch}
 <footer>
   <p><b>Statistical evidence, not proof.</b> Every relationship shown is a statement
   of statistical consistency between weight fingerprints &mdash; never an accusation.
-  Merges are flagged but not attributed; distillation is invisible to weight
-  forensics by construction; documented limitations (depth surgery, packed
+  Merges are decomposed only against named candidate parents (recipes above);
+  distillation is invisible to weight forensics by construction; documented limitations (depth surgery, packed
   quantization) are shown as honest abstentions, not guesses.</p>
   <div class="repro">pip install modeldna
 modeldna db pull                  # prebuilt reference fingerprints, seconds
@@ -310,7 +330,7 @@ function draw() {
   const sizeK = Math.min(vw, 1000) / 1000;
   // edges, far to near
   D.edges.map((e, k) => ({ e, k, z: (P[e.a].z + P[e.b].z) / 2 }))
-    .sort((a, b) => b.z - a.z)
+    .sort((a, b) => ((a.e.merge ? 1 : 0) - (b.e.merge ? 1 : 0)) || (b.z - a.z))
     .forEach(({ e, k, z }) => {
       const a = P[e.a], b = P[e.b];
       gtx.globalAlpha = (e.p == null ? .55 : e.verified ? .85 : .5)
@@ -318,7 +338,7 @@ function draw() {
       gtx.strokeStyle = e.merge ? css('--merge')
         : e.p == null ? css('--muted')
         : groupColor(D.nodes[e.child ?? e.a]);
-      gtx.lineWidth = (e.verified && e.p != null ? 2 : 1.1) * ((a.s + b.s) / 2) * sizeK;
+      gtx.lineWidth = (e.merge ? 2.6 : e.verified && e.p != null ? 2 : 1.1) * ((a.s + b.s) / 2) * sizeK;
       gtx.setLineDash(e.p == null ? [3, 5] : []);
       gtx.beginPath(); gtx.moveTo(a.x, a.y); gtx.lineTo(b.x, b.y); gtx.stroke();
     });
@@ -346,6 +366,7 @@ function draw() {
       gtx.beginPath(); gtx.arc(p.x, p.y, r + 1.8, 0, 7); gtx.stroke();
     }
     const label = (n.params >= LABEL_MIN_B && n.ref) || n.id.includes('SOLAR')
+      || (n.kind || '').includes('decomposed')
       || i === pinnedI || i === hoverI;
     if (label) {
       gtx.globalAlpha = Math.pow(da, 2.2) * keep;   // far-side labels recede
@@ -505,6 +526,26 @@ cv.addEventListener('pointermove', ev => {
 });
 cv.addEventListener('pointerleave', () => {
   tip.innerHTML = '<span class="dim">hover the matrix&hellip;</span>'; });
+
+/* ---------------- merge recipes ---------------- */
+const M = D.merges || [];
+if (M.length) {
+  document.getElementById('mergesTbl').innerHTML =
+    `<thead><tr><th>candidate parent</th><th>fitted weight &alpha;</th>
+     <th>published recipe</th></tr></thead>` +
+    M.map(m =>
+      `<tr class="mhead"><td colspan="3" class="mono"><b>${m.target}</b>
+        &nbsp;<span class="chip kind">${m.method}</span>
+        &nbsp;<span class="chip">${m.summary}</span></td></tr>` +
+      m.rows.map(r => `
+        <tr><td class="mono">${r.id}${r.base ? ' <span class="dim">(base)</span>' : ''}</td>
+        <td><span class="abar"><i style="width:${Math.round(Math.max(0, Math.min(1, r.alpha)) * 100)}%"></i></span><span class="num">${r.alpha.toFixed(3)}</span></td>
+        <td class="num">${r.published != null ? r.published.toFixed(2) : r.base ? '<span class="dim">&mdash;</span>' : '<span class="dim">layer-varying (see note)</span>'}</td></tr>`).join('') +
+      `<tr><td colspan="3" class="dim mnote">${m.note}</td></tr>`
+    ).join('');
+} else {
+  document.getElementById('mergesTbl').closest('section').style.display = 'none';
+}
 
 /* ---------------- scoreboard ---------------- */
 const S = D.bench.summary || {};

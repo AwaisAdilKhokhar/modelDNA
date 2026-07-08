@@ -120,6 +120,7 @@ def main() -> int:
     # (benchmarks/merge_decompose_bench.py): (target, parent) -> fitted alpha
     merge_w: dict[tuple[str, str], float] = {}
     merge_targets: dict[str, str] = {}  # target -> label for the node card
+    merge_cards: list[dict] = []  # the "recipes recovered" table on the page
     if MERGE_RESULTS.exists():
         mres = json.loads(MERGE_RESULTS.read_text())
         for key, label in (("neuralpipe_slerp", "slerp merge · decomposed"),
@@ -131,6 +132,43 @@ def main() -> int:
             for pid, w in r["alphas"].items():
                 if w >= 0.05:  # base columns and distractors sit at ~0
                     merge_w[(r["target"], pid)] = round(float(w), 3)
+        np_r = mres.get("neuralpipe_slerp")
+        if np_r and "target" in np_r:
+            merge_cards.append({
+                "target": np_r["target"],
+                "method": "slerp · layer-varying t",
+                "summary": np_r["summary"],
+                "rows": [
+                    {"id": pid, "alpha": round(w, 3), "published": None, "base": False}
+                    for pid, w in sorted(np_r["alphas"].items(), key=lambda kv: -kv[1])
+                ],
+                "note": (
+                    "the model card's opposite attention/MLP t-curves are "
+                    "recovered layer by layer at r="
+                    f"{np_r['attn_t_corr_vs_config']:.3f} (attention) and "
+                    f"r={np_r['mlp_t_corr_vs_config']:.2f} (MLP); the global "
+                    "weights above are the depth average"
+                ),
+            })
+        mo = mres.get("monarch_dare_ties")
+        if mo and "target" in mo:
+            pub = mo.get("published_weights", {})
+            merge_cards.append({
+                "target": mo["target"],
+                "method": "dare_ties",
+                "summary": mo["summary"],
+                "rows": [
+                    {"id": pid, "alpha": round(w, 3),
+                     "published": pub.get(pid), "base": pid not in pub}
+                    for pid, w in sorted(mo["alphas"].items(), key=lambda kv: -kv[1])
+                ],
+                "note": (
+                    "max deviation from the published recipe "
+                    f"{mo['max_abs_error']:.3f}; the verdict hedges to "
+                    f"{mo['summary']} because the Beagle parents are themselves "
+                    "overlapping merges — the weights still land on the card"
+                ),
+            })
 
     # bench suspects inherit their documented parent's family, so e.g.
     # zephyr colors as Mistral instead of falling into gray "Other"
@@ -218,6 +256,7 @@ def main() -> int:
         "nodes": nodes,
         "edges": edges,
         "matrix": matrix,
+        "merges": merge_cards,
         "bench": {"summary": summary,
                   "attribution": results.get("attribution", [])},
     }
