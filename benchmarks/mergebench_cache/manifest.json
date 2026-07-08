@@ -1,0 +1,139 @@
+{
+  "db_version": 7,
+  "updated_at": "2026-07-08T05:13:36+00:00",
+  "entries": [
+    {
+      "model_id": "mlabonne/Monarch-7B",
+      "family": "mistral",
+      "file": "mlabonne__Monarch-7B.json.gz",
+      "revision": "main",
+      "core_shape": [
+        4096,
+        32,
+        32,
+        8,
+        14336
+      ],
+      "n_layers": 32,
+      "inventory_hash": "37f531167e258b85f1ba22c826f86750f45441a624014053772d1fd9f783b2d6",
+      "tokenizer_hash": "fc4f0bd70b3709312d9d1d9e5ba674794b6bc5abc17429897a540f93882f25fc",
+      "torch_dtype": "bfloat16",
+      "meta": {},
+      "added_at": "2026-07-08T05:13:12+00:00"
+    },
+    {
+      "model_id": "mlabonne/NeuBeagle-7B",
+      "family": "mistral",
+      "file": "mlabonne__NeuBeagle-7B.json.gz",
+      "revision": "main",
+      "core_shape": [
+        4096,
+        32,
+        32,
+        8,
+        14336
+      ],
+      "n_layers": 32,
+      "inventory_hash": "37f531167e258b85f1ba22c826f86750f45441a624014053772d1fd9f783b2d6",
+      "tokenizer_hash": "fc4f0bd70b3709312d9d1d9e5ba674794b6bc5abc17429897a540f93882f25fc",
+      "torch_dtype": "bfloat16",
+      "meta": {},
+      "added_at": "2026-07-08T05:13:15+00:00"
+    },
+    {
+      "model_id": "mlabonne/NeuralHermes-2.5-Mistral-7B",
+      "family": "mistral",
+      "file": "mlabonne__NeuralHermes-2.5-Mistral-7B.json.gz",
+      "revision": "main",
+      "core_shape": [
+        4096,
+        32,
+        32,
+        8,
+        14336
+      ],
+      "n_layers": 32,
+      "inventory_hash": "ad5a5c68a4b4c23a928d812c43821264b50c5619f23f4df6a562e1ad18e7097d",
+      "tokenizer_hash": "e53ad4b12c310873dcbc1f11a36b14725af784fa953d21a370e4182709847c55",
+      "torch_dtype": "float16",
+      "meta": {},
+      "added_at": "2026-07-08T05:13:21+00:00"
+    },
+    {
+      "model_id": "mlabonne/NeuralOmniBeagle-7B",
+      "family": "mistral",
+      "file": "mlabonne__NeuralOmniBeagle-7B.json.gz",
+      "revision": "main",
+      "core_shape": [
+        4096,
+        32,
+        32,
+        8,
+        14336
+      ],
+      "n_layers": 32,
+      "inventory_hash": "18ec245452b6f683648df9f28dca602cbd6c4965c650046a0b473b25a77330f3",
+      "tokenizer_hash": "fc4f0bd70b3709312d9d1d9e5ba674794b6bc5abc17429897a540f93882f25fc",
+      "torch_dtype": "float16",
+      "meta": {},
+      "added_at": "2026-07-08T05:13:26+00:00"
+    },
+    {
+      "model_id": "mlabonne/NeuralPipe-7B-slerp",
+      "family": "mistral",
+      "file": "mlabonne__NeuralPipe-7B-slerp.json.gz",
+      "revision": "main",
+      "core_shape": [
+        4096,
+        32,
+        32,
+        8,
+        14336
+      ],
+      "n_layers": 32,
+      "inventory_hash": "37f531167e258b85f1ba22c826f86750f45441a624014053772d1fd9f783b2d6",
+      "tokenizer_hash": "fc4f0bd70b3709312d9d1d9e5ba674794b6bc5abc17429897a540f93882f25fc",
+      "torch_dtype": "bfloat16",
+      "meta": {},
+      "added_at": "2026-07-08T05:13:28+00:00"
+    },
+    {
+      "model_id": "mlabonne/OmniTruthyBeagle-7B-v0",
+      "family": "mistral",
+      "file": "mlabonne__OmniTruthyBeagle-7B-v0.json.gz",
+      "revision": "main",
+      "core_shape": [
+        4096,
+        32,
+        32,
+        8,
+        14336
+      ],
+      "n_layers": 32,
+      "inventory_hash": "18ec245452b6f683648df9f28dca602cbd6c4965c650046a0b473b25a77330f3",
+      "tokenizer_hash": "fc4f0bd70b3709312d9d1d9e5ba674794b6bc5abc17429897a540f93882f25fc",
+      "torch_dtype": "float16",
+      "meta": {},
+      "added_at": "2026-07-08T05:13:33+00:00"
+    },
+    {
+      "model_id": "OpenPipe/mistral-ft-optimized-1218",
+      "family": "mistral",
+      "file": "OpenPipe__mistral-ft-optimized-1218.json.gz",
+      "revision": "main",
+      "core_shape": [
+        4096,
+        32,
+        32,
+        8,
+        14336
+      ],
+      "n_layers": 32,
+      "inventory_hash": "37f531167e258b85f1ba22c826f86750f45441a624014053772d1fd9f783b2d6",
+      "tokenizer_hash": "fc4f0bd70b3709312d9d1d9e5ba674794b6bc5abc17429897a540f93882f25fc",
+      "torch_dtype": "bfloat16",
+      "meta": {},
+      "added_at": "2026-07-08T05:13:36+00:00"
+    }
+  ]
+}

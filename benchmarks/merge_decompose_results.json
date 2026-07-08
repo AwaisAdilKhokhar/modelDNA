@@ -1,0 +1,124 @@
+{
+ "neuralpipe_slerp": {
+  "target": "mlabonne/NeuralPipe-7B-slerp",
+  "summary": "MERGE",
+  "alphas": {
+   "OpenPipe/mistral-ft-optimized-1218": 0.6438052712339196,
+   "mlabonne/NeuralHermes-2.5-Mistral-7B": 0.3561947287660804
+  },
+  "recon_cos": 0.9999570145443744,
+  "gain_vs_single": 0.7818773762766402,
+  "attn_t_corr_vs_config": 0.9989770503117053,
+  "mlp_t_corr_vs_config": 0.9703436214430644,
+  "attn_t_fitted": [
+   0.0,
+   0.058,
+   0.128,
+   0.193,
+   0.258,
+   0.323,
+   0.387,
+   0.45,
+   0.489,
+   0.467,
+   0.441,
+   0.416,
+   0.391,
+   0.364,
+   0.338,
+   0.312,
+   0.326,
+   0.377,
+   0.429,
+   0.478,
+   0.533,
+   0.583,
+   0.635,
+   0.685,
+   0.725,
+   0.772,
+   0.805,
+   0.863,
+   0.91,
+   0.951,
+   0.98,
+   0.952
+  ],
+  "mlp_t_fitted": [
+   0.656,
+   0.966,
+   0.928,
+   0.826,
+   0.717,
+   0.67,
+   0.609,
+   0.556,
+   0.519,
+   0.543,
+   0.566,
+   0.591,
+   0.604,
+   0.642,
+   0.667,
+   0.677,
+   0.672,
+   0.613,
+   0.575,
+   0.54,
+   0.458,
+   0.407,
+   0.36,
+   0.32,
+   0.278,
+   0.223,
+   0.194,
+   0.146,
+   0.098,
+   0.058,
+   0.019,
+   0.0
+  ],
+  "notes": [
+   "a residual remains after the mixture \u2014 consistent with post-merge fine-tuning, TIES/DARE sparsification, or an unlisted parent",
+   "mixture weights vary across layers (max per-parent std 0.19); consistent with a gradient/slerp-style merge",
+   "norm-vector cross-check (F2) diverges from the F3 fit (max deviation 0.36); treat exact weights with caution"
+  ]
+ },
+ "monarch_dare_ties": {
+  "target": "mlabonne/Monarch-7B",
+  "summary": "AMBIGUOUS",
+  "alphas": {
+   "mlabonne/OmniTruthyBeagle-7B-v0": 0.37142523062874017,
+   "mlabonne/NeuBeagle-7B": 0.34744743817645296,
+   "mlabonne/NeuralOmniBeagle-7B": 0.2909142583938548,
+   "mistralai/Mistral-7B-v0.1": -0.009786927199048057
+  },
+  "published_weights": {
+   "mlabonne/OmniTruthyBeagle-7B-v0": 0.36,
+   "mlabonne/NeuBeagle-7B": 0.34,
+   "mlabonne/NeuralOmniBeagle-7B": 0.3
+  },
+  "max_abs_error": 0.01142523062874018,
+  "alpha_spread": {
+   "mlabonne/OmniTruthyBeagle-7B-v0": 0.008371957308872514,
+   "mlabonne/NeuBeagle-7B": 0.007894897291051504,
+   "mlabonne/NeuralOmniBeagle-7B": 0.009275645189063963,
+   "mistralai/Mistral-7B-v0.1": 0.008997699406348219
+  },
+  "recon_cos": 0.9995363229103986,
+  "gain_vs_single": 0.21904152654240128,
+  "notes": [
+   "task vectors of mlabonne/OmniTruthyBeagle-7B-v0 and mlabonne/NeuralOmniBeagle-7B are nearly parallel (r=0.987); their split is poorly identified"
+  ]
+ },
+ "alphamonarch_chain": {
+  "target": "mlabonne/AlphaMonarch-7B",
+  "summary": "SINGLE_PARENT",
+  "alphas": {
+   "mlabonne/Monarch-7B": 0.9999844221986076,
+   "teknium/OpenHermes-2.5-Mistral-7B": -3.131912689839379e-05,
+   "mistralai/Mistral-7B-v0.1": 4.689692829074055e-05
+  },
+  "gain_vs_single": 1.5854438854989716e-05
+ }
+}
