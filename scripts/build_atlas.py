@@ -26,8 +26,10 @@ from modeldna.db.store import ReferenceDB, default_db_path
 
 REPO = Path(__file__).resolve().parents[1]
 BENCH_CACHE = REPO / "benchmarks" / "lineagebench_cache"
+MERGE_CACHE = REPO / "benchmarks" / "mergebench_cache"
 PAIRS = REPO / "benchmarks" / "lineagebench_pairs.json"
 RESULTS = REPO / "benchmarks" / "lineagebench_results.json"
+MERGE_RESULTS = REPO / "benchmarks" / "merge_decompose_results.json"
 TEMPLATE = Path(__file__).parent / "atlas_template.html"
 
 EDGE_P = 0.9  # graph edges: calibrated P(derived) at/above the reporting threshold
@@ -60,6 +62,8 @@ def load_fingerprints() -> tuple[dict, dict, set[str]]:
     if default_db_path().exists():
         sources.append(("ref", ReferenceDB()))
     sources.append(("bench", ReferenceDB(BENCH_CACHE)))
+    if MERGE_CACHE.exists():
+        sources.append(("mergebench", ReferenceDB(MERGE_CACHE)))
     for kind, db in sources:
         for e in db.entries():
             if kind == "ref":
@@ -112,6 +116,22 @@ def main() -> int:
     verified = {(p["suspect"], p["parent"]): p for p in manifest["pairs"]}
     verdicts = {r["suspect"]: r for r in results.get("attribution", [])}
 
+    # merge decompositions validated against published mergekit configs
+    # (benchmarks/merge_decompose_bench.py): (target, parent) -> fitted alpha
+    merge_w: dict[tuple[str, str], float] = {}
+    merge_targets: dict[str, str] = {}  # target -> label for the node card
+    if MERGE_RESULTS.exists():
+        mres = json.loads(MERGE_RESULTS.read_text())
+        for key, label in (("neuralpipe_slerp", "slerp merge · decomposed"),
+                           ("monarch_dare_ties", "dare_ties merge · decomposed")):
+            r = mres.get(key)
+            if not r or "target" not in r:
+                continue
+            merge_targets[r["target"]] = label
+            for pid, w in r["alphas"].items():
+                if w >= 0.05:  # base columns and distractors sit at ~0
+                    merge_w[(r["target"], pid)] = round(float(w), 3)
+
     # bench suspects inherit their documented parent's family, so e.g.
     # zephyr colors as Mistral instead of falling into gray "Other"
     for (suspect, parent) in verified:
@@ -138,7 +158,8 @@ def main() -> int:
             "ref": m in ref_ids,
             "bench": m in verdicts,
             "verdict": v["verdict"] if v else None,
-            "kind": verified.get((m, v["true_parent"]))["kind"] if v else None,
+            "kind": merge_targets.get(m)
+            or (verified.get((m, v["true_parent"]))["kind"] if v else None),
         })
 
     print(f"comparing {len(ids)} models pairwise ...")
@@ -156,14 +177,20 @@ def main() -> int:
             p = round(float(p), 4)
             matrix[i][j] = matrix[j][i] = p
             ver = verified.get((a, b)) or verified.get((b, a))
-            if p >= EDGE_P or ver:
+            mw = merge_w.get((a, b)) or merge_w.get((b, a))
+            if p >= EDGE_P or ver or mw:
                 f = ev.features()
+                child = idx[ver["suspect"]] if ver else None
+                if mw:
+                    child = idx[a if (a, b) in merge_w else b]
                 edges.append({
                     "a": i, "b": j, "p": p,
-                    "verified": bool(ver),
-                    "kind": ver["kind"] if ver else None,
+                    "verified": bool(ver) or bool(mw),
+                    "kind": (f"merge α={mw:.2f}" if mw
+                             else ver["kind"] if ver else None),
+                    "merge": mw,
                     # direction: child listed first in the manifest
-                    "child": idx[ver["suspect"]] if ver else None,
+                    "child": child,
                     "feat": {k: (round(v, 3) if v is not None else None)
                              for k, v in f.items()},
                 })

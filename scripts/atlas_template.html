@@ -12,6 +12,7 @@
   --good:#0ca30c; --good-ink:#006300;
   --g0:#2a78d6; --g1:#e34948; --g2:#008300; --g3:#eda100;
   --g4:#4a3aa7; --g5:#e87ba4; --g6:#1baf7a; --g7:#898781;
+  --merge:#a34fd1;
   --seq-lo:#cde2fb; --seq-hi:#0d366b;
   --card:#ffffff; --shadow:0 10px 30px rgba(11,11,11,.10);
 }
@@ -22,6 +23,7 @@
     --good:#0ca30c; --good-ink:#0ca30c;
     --g0:#3987e5; --g1:#e66767; --g2:#008300; --g3:#c98500;
     --g4:#9085e9; --g5:#d55181; --g6:#199e70; --g7:#898781;
+    --merge:#c07ae8;
     --seq-lo:#16233a; --seq-hi:#9ec5f4;
     --card:#222221; --shadow:0 10px 30px rgba(0,0,0,.5);
   }
@@ -32,6 +34,7 @@
   --good:#0ca30c; --good-ink:#006300;
   --g0:#2a78d6; --g1:#e34948; --g2:#008300; --g3:#eda100;
   --g4:#4a3aa7; --g5:#e87ba4; --g6:#1baf7a; --g7:#898781;
+  --merge:#a34fd1;
   --seq-lo:#cde2fb; --seq-hi:#0d366b;
   --card:#ffffff; --shadow:0 10px 30px rgba(11,11,11,.10);
 }
@@ -41,6 +44,7 @@
   --good:#0ca30c; --good-ink:#0ca30c;
   --g0:#3987e5; --g1:#e66767; --g2:#008300; --g3:#c98500;
   --g4:#9085e9; --g5:#d55181; --g6:#199e70; --g7:#898781;
+    --merge:#c07ae8;
   --seq-lo:#16233a; --seq-hi:#9ec5f4;
   --card:#222221; --shadow:0 10px 30px rgba(0,0,0,.5);
 }
@@ -180,7 +184,9 @@ footer p{max-width:88ch}
   <p class="sub">Each dot is a model on the Hugging Face Hub; size tracks parameter
   count. A solid line means the calibrated probability of shared lineage is
   &ge;&nbsp;0.90 &mdash; thicker when the pair's parentage is corroborated by the
-  publisher's own documentation. Drag to orbit, scroll to zoom, hover to inspect,
+  publisher's own documentation. Purple edges are <b>decomposed merges</b>: the
+  fitted mixture weight on each edge matches the merge recipe published
+  on the model card (recovered from weights alone, then checked against it). Drag to orbit, scroll to zoom, hover to inspect,
   click to pin.</p>
   <div class="stage" id="stage">
     <canvas id="graph3d" role="img"
@@ -309,7 +315,8 @@ function draw() {
       const a = P[e.a], b = P[e.b];
       gtx.globalAlpha = (e.p == null ? .55 : e.verified ? .85 : .5)
         * depthA(z) * edgeKeep(k);
-      gtx.strokeStyle = e.p == null ? css('--muted')
+      gtx.strokeStyle = e.merge ? css('--merge')
+        : e.p == null ? css('--muted')
         : groupColor(D.nodes[e.child ?? e.a]);
       gtx.lineWidth = (e.verified && e.p != null ? 2 : 1.1) * ((a.s + b.s) / 2) * sizeK;
       gtx.setLineDash(e.p == null ? [3, 5] : []);
@@ -443,6 +450,7 @@ legend.insertAdjacentHTML('beforeend',
   `<span class="sep"></span>
    <span class="item"><span class="lineref"></span>&nbsp;detected lineage (P &ge; 0.90)</span>
    <span class="item"><span class="lineref dash"></span>&nbsp;documented, tool abstains</span>
+   <span class="item"><span class="lineref" style="border-top-color:var(--merge)"></span>&nbsp;decomposed merge (fitted &alpha;)</span>
    <span class="item"><svg width="18" height="14"><circle cx="8" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-dasharray="2.5 2.5"/></svg>&nbsp;LineageBench specimen</span>`);
 
 /* ---------------- matrix ---------------- */
