@@ -6,165 +6,203 @@
 <title>modelDNA Atlas — the weight-space family tree of open LLMs</title>
 <meta name="description" content="Lineage of open-weight LLMs reconstructed from weight evidence alone — no model cards, no metadata, just the weights.">
 <style>
+/* One committed look: the whole page is the CRT console, in both themes.
+   Legacy var names are kept and repointed so every component follows. */
 :root{
-  --plane:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink-2:#52514e;
-  --muted:#898781; --grid:#e1e0d9; --axis:#c3c2b7; --ring:rgba(11,11,11,.10);
-  --good:#0ca30c; --good-ink:#006300;
-  --g0:#2a78d6; --g1:#e34948; --g2:#008300; --g3:#eda100;
-  --g4:#4a3aa7; --g5:#e87ba4; --g6:#1baf7a; --g7:#898781;
-  --merge:#a34fd1;
-  --seq-lo:#cde2fb; --seq-hi:#0d366b;
-  --card:#ffffff; --shadow:0 10px 30px rgba(11,11,11,.10);
+  --plane:#050807; --surface:#0a100e; --ink:#c9ead6; --ink-2:#8fb3a0;
+  --muted:#5d7a6c; --grid:#182720; --axis:#2c4237;
+  --ring:rgba(77,255,166,.14);
+  --good:#4dffa6; --good-ink:#4dffa6;
+  --merge:#ff47e0;
+  --seq-lo:#0b201a; --seq-hi:#4dffa6;
+  --card:#0a100e; --shadow:0 12px 34px rgba(0,0,0,.6);
 }
-@media (prefers-color-scheme: dark){
-  :root{
-    --plane:#0d0d0d; --surface:#1a1a19; --ink:#ffffff; --ink-2:#c3c2b7;
-    --muted:#898781; --grid:#2c2c2a; --axis:#383835; --ring:rgba(255,255,255,.12);
-    --good:#0ca30c; --good-ink:#0ca30c;
-    --g0:#3987e5; --g1:#e66767; --g2:#008300; --g3:#c98500;
-    --g4:#9085e9; --g5:#d55181; --g6:#199e70; --g7:#898781;
-    --merge:#c07ae8;
-    --seq-lo:#16233a; --seq-hi:#9ec5f4;
-    --card:#222221; --shadow:0 10px 30px rgba(0,0,0,.5);
-  }
-}
-:root[data-theme="light"]{
-  --plane:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink-2:#52514e;
-  --muted:#898781; --grid:#e1e0d9; --axis:#c3c2b7; --ring:rgba(11,11,11,.10);
-  --good:#0ca30c; --good-ink:#006300;
-  --g0:#2a78d6; --g1:#e34948; --g2:#008300; --g3:#eda100;
-  --g4:#4a3aa7; --g5:#e87ba4; --g6:#1baf7a; --g7:#898781;
-  --merge:#a34fd1;
-  --seq-lo:#cde2fb; --seq-hi:#0d366b;
-  --card:#ffffff; --shadow:0 10px 30px rgba(11,11,11,.10);
-}
-:root[data-theme="dark"]{
-  --plane:#0d0d0d; --surface:#1a1a19; --ink:#ffffff; --ink-2:#c3c2b7;
-  --muted:#898781; --grid:#2c2c2a; --axis:#383835; --ring:rgba(255,255,255,.12);
-  --good:#0ca30c; --good-ink:#0ca30c;
-  --g0:#3987e5; --g1:#e66767; --g2:#008300; --g3:#c98500;
-  --g4:#9085e9; --g5:#d55181; --g6:#199e70; --g7:#898781;
-    --merge:#c07ae8;
-  --seq-lo:#16233a; --seq-hi:#9ec5f4;
-  --card:#222221; --shadow:0 10px 30px rgba(0,0,0,.5);
+/* -- CRT console -------------------------------------------------------
+   The constellation is always a dark instrument panel, in both themes.
+   Neon family palette validated for the dark surface (dataviz six checks):
+   lightness band, chroma floor, CVD floor + direct labels, contrast. */
+:root{
+  --crt-bg:#070b0a; --crt-ink:#c9ead6; --crt-dim:#5d7a6c;
+  --crt-green:#4dffa6; --crt-amber:#ffb000; --crt-red:#ff4936;
+  --crt-frame:rgba(255,73,54,.42);
+  --n0:#3d8bff; --n1:#f04f38; --n2:#00ab5e; --n3:#c07f00;
+  --n4:#9a6cf5; --n5:#e0498f; --n6:#00a9a2; --n7:#a8853b;
+  --merge-neon:#ff47e0;
+  --crt-font:"Cascadia Mono",Consolas,"IBM Plex Mono",ui-monospace,monospace;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--plane);color:var(--ink);
-  font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;}
-code,.mono{font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;}
-a{color:inherit}
+body{margin:0;color:var(--ink);
+  background:#030605 radial-gradient(120% 60% at 50% 0%,#0a1310 0%,#050807 55%,#030605 100%) fixed;
+  font:13.5px/1.65 var(--crt-font);}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:99;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.11) 0 1px,transparent 1px 3px)}
+code,.mono{font-family:var(--crt-font)}
+a{color:var(--crt-green);text-decoration-color:rgba(77,255,166,.4)}
+a:hover{text-shadow:0 0 8px rgba(77,255,166,.5)}
+::selection{background:rgba(77,255,166,.25)}
 .wrap{max-width:1160px;margin:0 auto;padding:0 24px;}
 
 header{padding:34px 0 10px}
 .brand{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
-.brand h1{margin:0;font-size:30px;font-weight:800;letter-spacing:-.02em}
-.brand h1 .dna{color:var(--g0)}
-.brand .atlas{font-family:ui-monospace,Consolas,monospace;font-size:12px;
-  letter-spacing:.24em;color:var(--ink-2);border:1px solid var(--axis);
-  padding:3px 9px;border-radius:3px;text-transform:uppercase}
+.brand h1{margin:0;font-size:29px;font-weight:700;letter-spacing:.02em;
+  text-shadow:0 0 14px rgba(201,234,214,.25)}
+.brand h1 .dna{color:var(--crt-green);text-shadow:0 0 14px rgba(77,255,166,.55)}
+.brand .atlas{font-family:var(--crt-font);font-size:11px;
+  letter-spacing:.24em;color:var(--crt-red);border:1px solid rgba(255,73,54,.7);
+  padding:3px 10px;border-radius:3px;text-transform:uppercase;
+  text-shadow:0 0 9px rgba(255,73,54,.6);background:rgba(7,11,10,.85)}
 .brand .spacer{flex:1}
-.brand .gh{font-size:13.5px;font-weight:600;text-decoration:none;
-  border:1px solid var(--axis);border-radius:6px;padding:7px 13px;
-  background:var(--surface)}
-.brand .gh:hover{border-color:var(--ink-2)}
-.thesis{max-width:64ch;color:var(--ink-2);margin:12px 0 0;text-wrap:balance}
+.brand .gh{font-size:12px;font-weight:600;text-decoration:none;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--crt-green);
+  border:1px solid rgba(77,255,166,.5);border-radius:3px;padding:7px 13px;
+  background:rgba(7,11,10,.85)}
+.brand .gh:hover{border-color:var(--crt-green);
+  box-shadow:0 0 12px rgba(77,255,166,.25)}
+.thesis{max-width:70ch;color:var(--ink-2);margin:12px 0 0;text-wrap:balance}
 .thesis b{color:var(--ink)}
 
-.eyebrow{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;
-  letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
-section{margin:44px 0}
-section h2{margin:0 0 4px;font-size:21px;letter-spacing:-.01em;text-wrap:balance}
-section .sub{margin:0 0 18px;color:var(--ink-2);max-width:72ch}
+.eyebrow{font-family:var(--crt-font);font-size:11px;
+  letter-spacing:.22em;text-transform:uppercase;color:var(--crt-red);
+  text-shadow:0 0 8px rgba(255,73,54,.45);margin:0 0 6px}
+.eyebrow::before{content:"\25B8  "}
+section{margin:46px 0}
+section h2{margin:0 0 4px;font-size:19px;letter-spacing:.05em;text-wrap:balance;
+  text-transform:uppercase;color:var(--crt-green);
+  text-shadow:0 0 12px rgba(77,255,166,.4)}
+section .sub{margin:0 0 18px;color:var(--ink-2);max-width:78ch}
 
 /* -- 3-D constellation -------------------------------------------------- */
-.stage{position:relative;background:var(--surface);border:1px solid var(--grid);
-  border-radius:10px;overflow:hidden}
+.stage{position:relative;border:1px solid var(--crt-frame);border-radius:5px;
+  overflow:hidden;background:var(--crt-bg);
+  box-shadow:0 0 0 1px rgba(0,0,0,.55),0 16px 44px rgba(0,0,0,.35),
+    0 0 24px rgba(255,73,54,.07)}
+.viewport{position:relative;
+  background:radial-gradient(120% 95% at 50% 6%,#0d1512 0%,#070b0a 52%,#030605 100%)}
 #graph3d{display:block;width:100%;cursor:grab;touch-action:none}
 #graph3d.dragging{cursor:grabbing}
-.controls{position:absolute;left:14px;top:12px;z-index:2;
-  font-family:ui-monospace,Consolas,monospace;font-size:11px;
-  letter-spacing:.08em;color:var(--muted);pointer-events:none;user-select:none}
-.legend{display:flex;flex-wrap:wrap;gap:6px 14px;padding:12px 16px;
-  border-top:1px solid var(--grid);align-items:center}
-.legend .item{display:flex;align-items:center;gap:7px;font-size:12.5px;
-  color:var(--ink-2);cursor:default;padding:2px 4px;border-radius:4px}
-.legend .item:hover{background:var(--plane)}
-.legend .swatch{width:11px;height:11px;border-radius:50%;flex:none}
-.legend .sep{width:1px;height:16px;background:var(--grid);margin:0 2px}
+.crt-overlay{position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.07) 0 1px,transparent 1px 3px)}
+.crt-overlay::after{content:"";position:absolute;inset:0;
+  background:radial-gradient(ellipse at center,transparent 58%,rgba(0,0,0,.4) 100%)}
+.crt-corner{position:absolute;width:14px;height:14px;z-index:3;
+  border:1px solid var(--crt-red);opacity:.8;pointer-events:none}
+.crt-corner.tl{top:5px;left:5px;border-width:2px 0 0 2px}
+.crt-corner.tr{top:5px;right:5px;border-width:2px 2px 0 0}
+.crt-corner.bl{bottom:5px;left:5px;border-width:0 0 2px 2px}
+.crt-corner.br{bottom:5px;right:5px;border-width:0 2px 2px 0}
+.crt-chip{position:absolute;top:12px;left:14px;z-index:3;
+  font-family:var(--crt-font);font-size:11px;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--crt-red);
+  border:1px solid rgba(255,73,54,.75);border-radius:3px;padding:3px 10px;
+  background:rgba(7,11,10,.85);text-shadow:0 0 9px rgba(255,73,54,.65);
+  pointer-events:none;user-select:none}
+.crt-status{position:absolute;top:15px;right:14px;z-index:3;
+  font-family:var(--crt-font);font-size:10.5px;letter-spacing:.14em;
+  color:var(--crt-amber);text-shadow:0 0 8px rgba(255,176,0,.5);
+  text-align:right;pointer-events:none;user-select:none}
+.controls{position:absolute;left:14px;bottom:11px;z-index:3;
+  font-family:var(--crt-font);font-size:10.5px;
+  letter-spacing:.14em;color:var(--crt-green);
+  text-shadow:0 0 7px rgba(77,255,166,.55);pointer-events:none;user-select:none}
+.legend{display:flex;flex-wrap:wrap;gap:5px 15px;padding:11px 16px;
+  border-top:1px solid rgba(255,73,54,.28);align-items:center;
+  background:rgba(5,9,8,.92)}
+.legend .item{display:flex;align-items:center;gap:7px;font-size:10.5px;
+  font-family:var(--crt-font);letter-spacing:.1em;text-transform:uppercase;
+  color:var(--crt-dim);cursor:default;padding:2px 4px;border-radius:3px}
+.legend .item:hover{background:rgba(77,255,166,.07);color:var(--crt-ink)}
+.legend .swatch{width:9px;height:9px;border-radius:50%;flex:none;
+  box-shadow:0 0 7px currentColor}
+.legend .sep{width:1px;height:16px;background:rgba(255,73,54,.3);margin:0 2px}
 .legend .lineref{display:inline-block;width:22px;height:0;
-  border-top:2px solid var(--muted);vertical-align:middle}
+  border-top:2px solid var(--crt-dim);vertical-align:middle}
 .legend .lineref.dash{border-top-style:dashed}
 
-.detail{position:absolute;top:14px;right:14px;width:300px;max-width:70%;
-  background:var(--card);border:1px solid var(--grid);border-radius:9px;
-  box-shadow:var(--shadow);padding:14px 16px;font-size:13px;display:none;z-index:3}
+.detail{position:absolute;top:44px;right:14px;width:302px;max-width:70%;
+  background:rgba(6,10,9,.93);border:1px solid rgba(255,176,0,.5);
+  border-radius:3px;box-shadow:0 0 20px rgba(0,0,0,.65),0 0 12px rgba(255,176,0,.12);
+  padding:13px 15px;font-size:12px;display:none;z-index:4;
+  font-family:var(--crt-font);color:var(--crt-ink)}
 .detail.show{display:block}
-.detail h3{margin:0 0 2px;font-size:13.5px;word-break:break-all;
-  font-family:ui-monospace,Consolas,monospace}
-.detail .fam{color:var(--ink-2);font-size:12px;margin:0 0 8px}
-.detail table{width:100%;border-collapse:collapse;font-size:12.5px}
+.detail h3{margin:0 0 2px;font-size:12.5px;word-break:break-all;
+  font-family:var(--crt-font);color:var(--crt-amber);
+  text-shadow:0 0 8px rgba(255,176,0,.45);letter-spacing:.04em}
+.detail .fam{color:var(--crt-dim);font-size:11px;margin:0 0 8px}
+.detail table{width:100%;border-collapse:collapse;font-size:11.5px}
 .detail td{padding:2.5px 0;vertical-align:top}
-.detail td:first-child{color:var(--muted);padding-right:10px;white-space:nowrap}
-.detail .num{font-family:ui-monospace,Consolas,monospace;
-  font-variant-numeric:tabular-nums}
-.detail .hint{color:var(--muted);font-size:11.5px;margin:8px 0 0}
+.detail td:first-child{color:var(--crt-dim);padding-right:10px;white-space:nowrap;
+  text-transform:uppercase;font-size:10px;letter-spacing:.08em}
+.detail .num{font-family:var(--crt-font);font-variant-numeric:tabular-nums;
+  color:var(--crt-green)}
+.detail .hint{color:var(--crt-dim);font-size:10.5px;margin:8px 0 0;
+  letter-spacing:.06em;text-transform:uppercase}
+.detail .chip{border-color:rgba(77,255,166,.45);color:var(--crt-green)}
+.detail .dim{color:var(--crt-dim)}
 
-.chip{display:inline-block;font-family:ui-monospace,Consolas,monospace;
+.chip{display:inline-block;font-family:var(--crt-font);
   font-size:10.5px;letter-spacing:.06em;padding:2px 7px;border-radius:3px;
   border:1px solid var(--axis);color:var(--ink-2);white-space:nowrap}
-.chip.pass{border-color:var(--good);color:var(--good-ink);font-weight:700}
+.chip.pass{border-color:var(--good);color:var(--good-ink);font-weight:700;
+  text-shadow:0 0 8px rgba(77,255,166,.5)}
 .chip.kind{border-style:dashed}
 
 /* -- matrix ------------------------------------------------------------ */
-.matrix-card{background:var(--surface);border:1px solid var(--grid);
-  border-radius:10px;padding:18px;position:relative}
+.matrix-card{background:var(--surface);border:1px solid var(--crt-frame);
+  border-radius:5px;padding:18px;position:relative;
+  box-shadow:0 0 0 1px rgba(0,0,0,.55),0 0 20px rgba(255,73,54,.06)}
 .matrix-flex{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
-#matrix{border:1px solid var(--grid);cursor:crosshair;
+#matrix{border:1px solid var(--axis);cursor:crosshair;
   image-rendering:pixelated}
-.matrix-side{flex:1;min-width:230px;font-size:13px;color:var(--ink-2)}
+.matrix-side{flex:1;min-width:230px;font-size:12.5px;color:var(--ink-2)}
 .matrix-side .scale{display:flex;align-items:center;gap:8px;margin:10px 0}
 .matrix-side .ramp{height:10px;width:150px;border-radius:5px;
-  background:linear-gradient(90deg,var(--seq-lo),var(--seq-hi))}
+  background:linear-gradient(90deg,var(--seq-lo),var(--seq-hi));
+  box-shadow:0 0 10px rgba(77,255,166,.25)}
 .matrix-side .mono{font-size:11.5px}
-#cellTip{margin-top:12px;padding:10px 12px;border:1px solid var(--grid);
-  border-radius:7px;background:var(--card);font-size:12.5px;min-height:58px}
-#cellTip .num{font-family:ui-monospace,Consolas,monospace}
+#cellTip{margin-top:12px;padding:10px 12px;border:1px solid var(--axis);
+  border-radius:3px;background:var(--card);font-size:12px;min-height:58px}
+#cellTip .num{font-family:var(--crt-font);color:var(--crt-green)}
 
 /* -- merge recipes ------------------------------------------------------ */
 .abar{display:inline-block;width:110px;height:9px;border-radius:5px;
   background:var(--grid);vertical-align:middle;margin-right:9px;overflow:hidden}
-.abar i{display:block;height:100%;background:var(--merge)}
+.abar i{display:block;height:100%;background:var(--merge-neon)}
 tr.mhead td{background:var(--plane);padding-top:13px}
 td.mnote{font-size:12px;padding-top:4px}
 
 /* -- scoreboard --------------------------------------------------------- */
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
   gap:12px;margin-bottom:18px}
-.tile{background:var(--surface);border:1px solid var(--grid);border-radius:9px;
-  padding:14px 16px}
-.tile .lbl{font-family:ui-monospace,Consolas,monospace;font-size:10.5px;
-  letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-.tile .val{font-size:30px;font-weight:800;letter-spacing:-.02em;margin:2px 0}
-.tile .note{font-size:12px;color:var(--ink-2)}
+.tile{background:var(--surface);border:1px solid var(--crt-frame);border-radius:5px;
+  padding:14px 16px;box-shadow:0 0 0 1px rgba(0,0,0,.55)}
+.tile .lbl{font-family:var(--crt-font);font-size:10.5px;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--crt-amber);
+  text-shadow:0 0 7px rgba(255,176,0,.4)}
+.tile .val{font-size:29px;font-weight:700;letter-spacing:0;margin:2px 0;
+  color:var(--crt-green);text-shadow:0 0 14px rgba(77,255,166,.45)}
+.tile .note{font-size:11.5px;color:var(--muted)}
 .tbl-wrap{overflow-x:auto;background:var(--surface);
-  border:1px solid var(--grid);border-radius:10px}
-table.pairs{border-collapse:collapse;width:100%;font-size:13px;min-width:720px}
-.pairs th{font-family:ui-monospace,Consolas,monospace;font-size:10.5px;
-  letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
-  text-align:left;padding:11px 14px;border-bottom:1px solid var(--grid)}
+  border:1px solid var(--crt-frame);border-radius:5px;
+  box-shadow:0 0 0 1px rgba(0,0,0,.55)}
+table.pairs{border-collapse:collapse;width:100%;font-size:12.5px;min-width:720px}
+.pairs th{font-family:var(--crt-font);font-size:10.5px;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--crt-red);
+  text-shadow:0 0 7px rgba(255,73,54,.35);
+  text-align:left;padding:11px 14px;border-bottom:1px solid rgba(255,73,54,.3)}
 .pairs td{padding:9px 14px;border-bottom:1px solid var(--grid);vertical-align:middle}
 .pairs tr:last-child td{border-bottom:none}
-.pairs td.mono{font-size:12.5px}
-.pairs .num{font-family:ui-monospace,Consolas,monospace;
-  font-variant-numeric:tabular-nums}
+.pairs td.mono{font-size:12px}
+.pairs .num{font-family:var(--crt-font);font-variant-numeric:tabular-nums;
+  color:var(--crt-green)}
 .pairs .arrow{color:var(--muted)}
-.ok{color:var(--good-ink);font-weight:700}
+.ok{color:var(--good-ink);font-weight:700;text-shadow:0 0 8px rgba(77,255,166,.5)}
 .dim{color:var(--muted)}
 
-footer{margin:56px 0 40px;padding-top:18px;border-top:1px solid var(--grid);
-  color:var(--ink-2);font-size:13px}
-footer .repro{font-family:ui-monospace,Consolas,monospace;font-size:12px;
-  background:var(--surface);border:1px solid var(--grid);border-radius:7px;
+footer{margin:56px 0 40px;padding-top:18px;border-top:1px solid rgba(255,73,54,.28);
+  color:var(--ink-2);font-size:12.5px}
+footer .repro{font-family:var(--crt-font);font-size:12px;color:var(--crt-green);
+  text-shadow:0 0 6px rgba(77,255,166,.3);
+  background:#060a09;border:1px solid var(--axis);border-radius:3px;
   padding:10px 14px;margin:12px 0;overflow-x:auto;white-space:pre}
 footer p{max-width:88ch}
 </style>
@@ -191,15 +229,22 @@ footer p{max-width:88ch}
   <p class="sub">Each dot is a model on the Hugging Face Hub; size tracks parameter
   count. A solid line means the calibrated probability of shared lineage is
   &ge;&nbsp;0.90 &mdash; thicker when the pair's parentage is corroborated by the
-  publisher's own documentation. Purple edges are <b>decomposed merges</b>: the
+  publisher's own documentation. Magenta edges are <b>decomposed merges</b>: the
   fitted mixture weight on each edge matches the merge recipe published
   on the model card (recovered from weights alone, then checked against it). Drag to orbit, scroll to zoom, hover to inspect,
   click to pin.</p>
   <div class="stage" id="stage">
-    <canvas id="graph3d" role="img"
-            aria-label="Rotatable 3-D graph of model lineage"></canvas>
-    <div class="controls">drag&nbsp;=&nbsp;orbit&nbsp;&middot;&nbsp;scroll&nbsp;=&nbsp;zoom</div>
-    <div class="detail" id="detail"></div>
+    <div class="viewport">
+      <canvas id="graph3d" role="img"
+              aria-label="Rotatable 3-D graph of model lineage"></canvas>
+      <div class="crt-overlay"></div>
+      <span class="crt-corner tl"></span><span class="crt-corner tr"></span>
+      <span class="crt-corner bl"></span><span class="crt-corner br"></span>
+      <div class="crt-chip">&#9656; specimen map</div>
+      <div class="crt-status" id="crtStatus"></div>
+      <div class="controls">DRAG &middot; ORBIT&ensp;&ensp;SCROLL &middot; ZOOM&ensp;&ensp;CLICK &middot; PIN</div>
+      <div class="detail" id="detail"></div>
+    </div>
     <div class="legend" id="legend"></div>
   </div>
 </section>
@@ -232,7 +277,7 @@ footer p{max-width:88ch}
   parents, so the mixture can be refit from sampled weights. For these two real
   merges the fitted weights match the mergekit recipe published on the model
   card &mdash; the recipe was recovered blind, then checked against the card.
-  The purple edges in the constellation above carry the same weights;
+  The magenta edges in the constellation above carry the same weights;
   reproduce with <code>modeldna decompose</code> or
   <code>benchmarks/merge_decompose_bench.py</code>.</p>
   <div class="tbl-wrap"><table class="pairs" id="mergesTbl"></table></div>
@@ -267,8 +312,8 @@ python scripts/build_atlas.py     # regenerate this page</div>
 <script>
 const D = JSON.parse(document.getElementById('atlas-data').textContent);
 const css = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim();
-const GC = i => css('--g' + Math.min(i, 7));
-const groupColor = n => n.group >= 0 && D.groups[n.group] !== 'Other' ? GC(n.group) : css('--g7');
+const GC = i => css('--n' + Math.min(i, 7));
+const groupColor = n => n.group >= 0 && D.groups[n.group] !== 'Other' ? GC(n.group) : css('--n7');
 
 /* ---------------- 3-D constellation ---------------- */
 const stage = document.getElementById('stage');
@@ -296,17 +341,53 @@ function resizeG() {
 resizeG(); addEventListener('resize', resizeG);
 
 const P = new Array(D.nodes.length);   // projected {x, y, s, z}
+const T = {};                          // cached camera transform
+function projPt(px, py, pz) {
+  let x = px * T.cy + pz * T.sy, z = -px * T.sy + pz * T.cy;
+  const y = py * T.cp - z * T.sp; z = py * T.sp + z * T.cp;
+  const s = T.F / (T.F + z);
+  return { x: vw / 2 + x * s * T.scale, y: vh / 2 + y * s * T.scale, s, z };
+}
 function projectAll() {
-  const cy = Math.cos(yaw), sy = Math.sin(yaw);
-  const cp = Math.cos(pitch), sp = Math.sin(pitch);
-  const scale = Math.min(vw, vh * 1.35) * .42 * zoom, F = 3.1;
+  T.cy = Math.cos(yaw); T.sy = Math.sin(yaw);
+  T.cp = Math.cos(pitch); T.sp = Math.sin(pitch);
+  T.scale = Math.min(vw, vh * 1.35) * .42 * zoom; T.F = 3.1;
   for (let i = 0; i < D.nodes.length; i++) {
     const n = D.nodes[i];
-    let x = n.x * cy + n.z * sy, z = -n.x * sy + n.z * cy;
-    const y = n.y * cp - z * sp; z = n.y * sp + z * cp;
-    const s = F / (F + z);
-    P[i] = { x: vw / 2 + x * s * scale, y: vh / 2 + y * s * scale, s, z };
+    P[i] = projPt(n.x, n.y, n.z);
   }
+}
+
+/* CRT backdrop: deterministic starfield on a far sphere + phosphor floor grid,
+   both projected through the camera so they parallax with the orbit */
+const stars = (() => {
+  let s = 42;
+  const rnd = () => (s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296;
+  return Array.from({ length: 130 }, () => {
+    const th = rnd() * Math.PI * 2, ph = Math.acos(2 * rnd() - 1), r = 1.7 + rnd() * .6;
+    return { x: r * Math.sin(ph) * Math.cos(th), y: r * Math.cos(ph) * .85,
+             z: r * Math.sin(ph) * Math.sin(th), m: rnd(), c: rnd() };
+  });
+})();
+function drawBackdrop() {
+  const Y = 1.24, EXT = 1.7, STEP = .34;
+  gtx.lineWidth = 1;
+  for (let v = -EXT; v <= EXT + 1e-9; v += STEP) {
+    const seg = [[projPt(v, Y, -EXT), projPt(v, Y, EXT)],
+                 [projPt(-EXT, Y, v), projPt(EXT, Y, v)]];
+    for (const [a, b] of seg) {
+      gtx.globalAlpha = .028 + .045 * Math.max(0, 1 - (a.z + b.z) / 2);
+      gtx.strokeStyle = '#4dffa6';
+      gtx.beginPath(); gtx.moveTo(a.x, a.y); gtx.lineTo(b.x, b.y); gtx.stroke();
+    }
+  }
+  for (const st of stars) {
+    const p = projPt(st.x, st.y, st.z);
+    gtx.globalAlpha = (.16 + .3 * st.m) * depthA(p.z);
+    gtx.fillStyle = st.c < .82 ? '#9fd8bb' : st.c < .94 ? '#ffb000' : '#ff4936';
+    gtx.beginPath(); gtx.arc(p.x, p.y, .5 + st.m * .9, 0, 7); gtx.fill();
+  }
+  gtx.globalAlpha = 1;
 }
 const depthA = z => .4 + .6 * (1 - (z + 1) / 2);   // near = opaque, far = faint
 function nodeKeep(i) {
@@ -327,52 +408,91 @@ function edgeKeep(k) {
 function draw() {
   projectAll();
   gtx.clearRect(0, 0, vw, vh);
+  drawBackdrop();
   const sizeK = Math.min(vw, 1000) / 1000;
-  // edges, far to near
+  // edges, far to near, with a phosphor glow
   D.edges.map((e, k) => ({ e, k, z: (P[e.a].z + P[e.b].z) / 2 }))
     .sort((a, b) => ((a.e.merge ? 1 : 0) - (b.e.merge ? 1 : 0)) || (b.z - a.z))
     .forEach(({ e, k, z }) => {
       const a = P[e.a], b = P[e.b];
-      gtx.globalAlpha = (e.p == null ? .55 : e.verified ? .85 : .5)
+      gtx.globalAlpha = (e.p == null ? .5 : e.verified ? .8 : .45)
         * depthA(z) * edgeKeep(k);
-      gtx.strokeStyle = e.merge ? css('--merge')
-        : e.p == null ? css('--muted')
+      gtx.strokeStyle = e.merge ? css('--merge-neon')
+        : e.p == null ? css('--crt-dim')
         : groupColor(D.nodes[e.child ?? e.a]);
-      gtx.lineWidth = (e.merge ? 2.6 : e.verified && e.p != null ? 2 : 1.1) * ((a.s + b.s) / 2) * sizeK;
+      gtx.shadowColor = gtx.strokeStyle;
+      gtx.shadowBlur = (e.merge ? 10 : 6) * ((a.s + b.s) / 2);
+      gtx.lineWidth = (e.merge ? 2.4 : e.verified && e.p != null ? 1.8 : 1) * ((a.s + b.s) / 2) * sizeK;
       gtx.setLineDash(e.p == null ? [3, 5] : []);
       gtx.beginPath(); gtx.moveTo(a.x, a.y); gtx.lineTo(b.x, b.y); gtx.stroke();
     });
-  gtx.setLineDash([]);
+  gtx.setLineDash([]); gtx.shadowBlur = 0;
   // nodes, far to near
   const order = D.nodes.map((_, i) => i).sort((i, j) => P[j].z - P[i].z);
-  gtx.font = '10.5px ui-monospace, Consolas, monospace';
+  const labels = [];
   for (const i of order) {
     const n = D.nodes[i], p = P[i];
     const r = R(n) * p.s * sizeK * Math.sqrt(zoom);
     const keep = nodeKeep(i), da = depthA(p.z);
+    const color = groupColor(n);
     gtx.globalAlpha = da * keep;
     if (n.bench) {                       // dashed specimen halo
-      gtx.strokeStyle = groupColor(n); gtx.lineWidth = 1.2;
+      gtx.strokeStyle = color; gtx.lineWidth = 1.1;
       gtx.setLineDash([2.5, 2.5]);
-      gtx.beginPath(); gtx.arc(p.x, p.y, r + 3.2, 0, 7); gtx.stroke();
+      gtx.beginPath(); gtx.arc(p.x, p.y, r + 3.4, 0, 7); gtx.stroke();
       gtx.setLineDash([]);
     }
-    gtx.fillStyle = groupColor(n);
+    gtx.shadowColor = color;             // phosphor bloom around the core
+    gtx.shadowBlur = (9 + r) * p.s;
+    gtx.fillStyle = color;
     gtx.beginPath(); gtx.arc(p.x, p.y, r, 0, 7); gtx.fill();
-    gtx.strokeStyle = css('--surface'); gtx.lineWidth = 1.4;
+    gtx.shadowBlur = 0;
+    gtx.fillStyle = 'rgba(255,255,255,.4)';   // hot center
+    gtx.beginPath(); gtx.arc(p.x, p.y, Math.max(.6, r * .34), 0, 7); gtx.fill();
+    gtx.strokeStyle = css('--crt-bg'); gtx.lineWidth = 1.4;
     gtx.beginPath(); gtx.arc(p.x, p.y, r, 0, 7); gtx.stroke();
-    if (i === pinnedI || i === hoverI) {
-      gtx.strokeStyle = css('--ink'); gtx.lineWidth = 1.6;
-      gtx.beginPath(); gtx.arc(p.x, p.y, r + 1.8, 0, 7); gtx.stroke();
+    if (i === pinnedI || i === hoverI) { // targeting reticle
+      gtx.strokeStyle = css('--crt-green'); gtx.lineWidth = 1.3;
+      gtx.shadowColor = css('--crt-green'); gtx.shadowBlur = 8;
+      gtx.beginPath(); gtx.arc(p.x, p.y, r + 4.5, 0, 7); gtx.stroke();
+      for (let q = 0; q < 4; q++) {
+        const ang = q * Math.PI / 2 + Math.PI / 4;
+        gtx.beginPath();
+        gtx.moveTo(p.x + Math.cos(ang) * (r + 4.5), p.y + Math.sin(ang) * (r + 4.5));
+        gtx.lineTo(p.x + Math.cos(ang) * (r + 10), p.y + Math.sin(ang) * (r + 10));
+        gtx.stroke();
+      }
+      gtx.shadowBlur = 0;
     }
     const label = (n.params >= LABEL_MIN_B && n.ref) || n.id.includes('SOLAR')
       || (n.kind || '').includes('decomposed')
       || i === pinnedI || i === hoverI;
-    if (label) {
-      gtx.globalAlpha = Math.pow(da, 2.2) * keep;   // far-side labels recede
-      gtx.fillStyle = css('--ink-2');
-      gtx.fillText(n.id.split('/').pop(), p.x + r + 5, p.y + 3.5);
-    }
+    if (label)
+      labels.push({
+        text: n.id.split('/').pop(), x: p.x, y: p.y, r,
+        alpha: Math.pow(da, 2.2) * keep,   // far-side labels recede
+        pri: (i === pinnedI || i === hoverI) ? 1e9
+          : ((n.kind || '').includes('decomposed') ? 1e3 : 0) + n.params,
+      });
+  }
+  // labels last, highest priority first; a label that would overlap an
+  // already-placed one is dropped, so dense clusters stay readable
+  gtx.font = '10.5px "Cascadia Mono", Consolas, ui-monospace, monospace';
+  const placed = [];
+  labels.sort((a, b) => b.pri - a.pri);
+  for (const L of labels) {
+    const w = gtx.measureText(L.text).width;
+    let lx = L.x + L.r + 6;
+    if (lx + w > vw - 4) lx = L.x - L.r - 6 - w;   // flip left at the edge
+    const rect = { x: lx - 2, y: L.y - 8, w: w + 5, h: 14 };
+    if (placed.some(o => rect.x < o.x + o.w && o.x < rect.x + rect.w &&
+                         rect.y < o.y + o.h && o.y < rect.y + rect.h)) continue;
+    placed.push(rect);
+    gtx.globalAlpha = Math.min(1, L.alpha) * .82;
+    gtx.fillStyle = 'rgba(4,8,6,.62)';            // backing keeps text off edges
+    gtx.fillRect(rect.x, rect.y, rect.w, rect.h);
+    gtx.fillStyle = css('--crt-ink');
+    gtx.fillText(L.text, lx, L.y + 3.5);
   }
   gtx.globalAlpha = 1;
 }
@@ -471,8 +591,14 @@ legend.insertAdjacentHTML('beforeend',
   `<span class="sep"></span>
    <span class="item"><span class="lineref"></span>&nbsp;detected lineage (P &ge; 0.90)</span>
    <span class="item"><span class="lineref dash"></span>&nbsp;documented, tool abstains</span>
-   <span class="item"><span class="lineref" style="border-top-color:var(--merge)"></span>&nbsp;decomposed merge (fitted &alpha;)</span>
+   <span class="item"><span class="lineref" style="border-top-color:var(--merge-neon)"></span>&nbsp;decomposed merge (fitted &alpha;)</span>
    <span class="item"><svg width="18" height="14"><circle cx="8" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-dasharray="2.5 2.5"/></svg>&nbsp;LineageBench specimen</span>`);
+
+/* mission-control status readout */
+document.getElementById('crtStatus').textContent =
+  `${D.nodes.length} SPECIMENS · ` +
+  `${D.edges.filter(e => e.p != null && e.p >= 0.9).length} LINEAGE EDGES · ` +
+  `${(D.merges || []).length} MERGES DECOMPOSED · WEIGHTS ONLY`;
 
 /* ---------------- matrix ---------------- */
 const cv = document.getElementById('matrix'), ctx = cv.getContext('2d');

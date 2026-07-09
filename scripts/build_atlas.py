@@ -74,35 +74,58 @@ def load_fingerprints() -> tuple[dict, dict, set[str]]:
     return fps, families, ref_ids
 
 
-def force_layout(n: int, edges: list[dict], groups: list[int], iters: int = 1800) -> np.ndarray:
-    """Small deterministic 3-D force layout, seeded by group direction."""
+def force_layout(n: int, edges: list[dict], groups: list[int], iters: int = 2400) -> np.ndarray:
+    """Small deterministic 3-D force layout.
+
+    Groups are seeded on a wide ring and held in their sector by anchor
+    gravity while foreign groups repel each other harder than siblings, so
+    families read as separate constellations. A final collision pass
+    guarantees a minimum node separation inside each cluster.
+    """
     rng = np.random.default_rng(7)
-    n_groups = max(groups) + 1
-    angle = np.array([2 * math.pi * g / n_groups for g in groups])
-    lift = np.array([(g % 3 - 1) * 0.9 for g in groups])  # spread groups off-plane
-    pos = np.stack([np.cos(angle), lift, np.sin(angle)], axis=1) * 10
-    pos += rng.normal(0, 1.5, (n, 3))
+    g = np.asarray(groups)
+    n_groups = g.max() + 1
+    angle = 2 * math.pi * g / n_groups
+    lift = (g % 3 - 1) * 3.2  # spread groups across three vertical layers
+    anchors = np.stack([np.cos(angle) * 11.0, lift, np.sin(angle) * 11.0], axis=1)
+    pos = anchors + rng.normal(0, 1.2, (n, 3))
+    same = g[:, None] == g[None, :]
+    rep_k = np.where(same, 14.0, 44.0)  # foreign clusters repel much harder
     ei = np.array([[e["a"], e["b"]] for e in edges]) if edges else np.zeros((0, 2), int)
     ew = np.array([e["p"] for e in edges]) if edges else np.zeros(0)
     for it in range(iters):
-        temp = 0.12 * (1 - it / iters) + 0.005
+        temp = 0.12 * (1 - it / iters) + 0.004
         d = pos[:, None, :] - pos[None, :, :]
         dist2 = (d**2).sum(-1) + 1e-6
-        rep = (d / dist2[..., None]).sum(1) * 16.0  # inverse-distance repulsion
-        force = rep - pos * 0.035  # weak centering
+        rep = (d * (rep_k / dist2)[..., None]).sum(1)
+        force = rep + (anchors - pos) * 0.05  # sector gravity doubles as centering
         if len(ei):
             delta = pos[ei[:, 0]] - pos[ei[:, 1]]
             dl = np.linalg.norm(delta, axis=1, keepdims=True) + 1e-6
             # generous rest lengths so tight families stay legible clusters,
             # not a single overlapping blob
-            rest = 3.4 - 1.6 * ew[:, None]
+            rest = 4.0 - 1.8 * ew[:, None]
             f = (dl - rest) * delta / dl * 0.8
             np.add.at(force, ei[:, 0], -f)
             np.add.at(force, ei[:, 1], f)
         pos += np.clip(force, -3, 3) * temp
+    min_sep = 1.5
+    for _ in range(80):
+        d = pos[:, None, :] - pos[None, :, :]
+        dist = np.sqrt((d**2).sum(-1) + 1e-9)
+        np.fill_diagonal(dist, np.inf)
+        ii, jj = np.where((dist < min_sep) & (np.arange(n)[:, None] < np.arange(n)))
+        if not len(ii):
+            break
+        dvec = pos[ii] - pos[jj]
+        dl = np.linalg.norm(dvec, axis=1, keepdims=True) + 1e-9
+        shift = dvec / dl * (min_sep - dl) * 0.5
+        np.add.at(pos, ii, shift)
+        np.add.at(pos, jj, -shift)
     pos -= pos.mean(0)
-    pos /= np.abs(pos).max() + 1e-9  # normalize to [-1, 1]^3
-    return pos
+    # robust scale: one far-flung node must not squash every cluster together
+    pos /= np.quantile(np.abs(pos), 0.96) + 1e-9
+    return np.clip(pos, -1.3, 1.3)
 
 
 def main() -> int:
