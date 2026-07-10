@@ -34,7 +34,7 @@ from modeldna.arch.canonical import (
 )
 from modeldna.arch.signature import ArchSignature, read_signature
 from modeldna.io.source import ModelSource
-from modeldna.io.weights import WeightIndex, _lcg_offsets
+from modeldna.io.weights import BaseWeightIndex, _lcg_offsets, open_weight_index
 from modeldna.fingerprint.methods import fnv1a, randomized_svals
 
 FP_SCHEMA_VERSION = 1
@@ -175,7 +175,7 @@ class FingerprintExtractor:
         self.seed = seed
         self.model_id = model_id or source.name
         self.revision = revision
-        self.index = WeightIndex(source)
+        self.index: BaseWeightIndex = open_weight_index(source)
         self.cmap: CanonicalMap = canonicalize(self.index.names)
         self.sig: ArchSignature = read_signature(source, self.index, self.cmap)
 
@@ -258,8 +258,8 @@ class FingerprintExtractor:
                     continue
                 rows, cols = t.shape
                 row0, r = _sketch_band(rows, self._tensor_seed(role, layer))
-                b0 = t.start + row0 * cols * t.itemsize
-                plan.append((t.shard, b0, b0 + r * cols * t.itemsize))
+                for s, e in self.index.plan_flat_slice(names[layer], row0 * cols, r * cols):
+                    plan.append((t.shard, s, e))
         self.index.prefetch(plan)
 
     def _extract_sigma_and_pcs(self, fp: Fingerprint, roles: list[str]) -> None:

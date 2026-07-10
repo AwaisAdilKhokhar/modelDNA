@@ -112,6 +112,13 @@ size), so any two models with matching shapes are sampled at identical
 element positions — the reference DB stores only the samples, never full
 weights, which keeps it in the single-digit MB per model.
 
+GGUF repos (the llama.cpp / ollama ecosystem) work the same way: quantized
+tensors are block-formatted, so an element range maps to a byte range of
+whole blocks — modelDNA fetches the covering blocks, dequantizes with
+llama.cpp's reference kernels, and samples the very same positions. A
+Q4_K_M download compares straight against the fp16 original in the DB;
+when a repo ships several quants, the highest-fidelity file is used.
+
 A logistic model over the evidence vector produces the calibrated
 probability, and every reported number ships with the unrelated-pair
 background distribution measured on the DB itself, because a bare "0.93"
@@ -319,11 +326,14 @@ republish the dataset with `python scripts/export_lineagebench.py --push`.
   scope and stated so in every report.
 - Depth-upscaled / layer-surgery derivatives are detected as shape mismatches
   and reported, not resolved (alignment search planned for v0.3).
-- **Safetensors only.** Repos that ship exclusively PyTorch `.bin` /
-  `.pt` checkpoints (a handful of older or research releases —
-  `deepseek-llm-7b-base`, `internlm2-7b`, `open_llama_7b`, `MiniCPM-2B-sft`
-  among the seed list) can't be fingerprinted at all until `.bin` decoding is
-  added.
+- **Safetensors and GGUF.** GGUF repos are fingerprinted by dequantizing
+  the sampled positions (any ggml quant type, K-quants and IQ included;
+  llama.cpp's q/k row permutation is undone so positions align with the
+  original weights). GPTQ/AWQ packed-int4 safetensors still abstain, and
+  repos that ship exclusively PyTorch `.bin` / `.pt` checkpoints
+  (`deepseek-llm-7b-base`, `internlm2-7b`, `open_llama_7b`,
+  `MiniCPM-2B-sft` among the seed list) can't be fingerprinted at all
+  until `.bin` decoding is added.
 
 ## Library use
 

@@ -16,7 +16,7 @@ from typing import Any
 from modeldna.arch.canonical import CanonicalMap, canonicalize
 from modeldna.io.safetensors import TensorInfo
 from modeldna.io.source import ModelSource
-from modeldna.io.weights import WeightIndex
+from modeldna.io.weights import BaseWeightIndex
 
 TOKENIZER_FILES = ("tokenizer.json", "tokenizer.model", "vocab.json", "spiece.model")
 
@@ -35,6 +35,8 @@ class ArchSignature:
     norm_eps: float | None = None
     torch_dtype: str = ""
     tie_word_embeddings: bool = False
+    #: storage the fingerprint was read from ("safetensors", "gguf:<file>")
+    weights_format: str = ""
 
     #: sha256 over the sorted (name, dtype, shape) tensor inventory
     inventory_hash: str = ""
@@ -108,9 +110,13 @@ def read_config(source: ModelSource) -> dict[str, Any]:
 
 
 def read_signature(
-    source: ModelSource, index: WeightIndex, cmap: CanonicalMap | None = None
+    source: ModelSource, index: BaseWeightIndex, cmap: CanonicalMap | None = None
 ) -> ArchSignature:
     cfg = read_config(source)
+    if hasattr(index, "hf_config"):
+        # GGUF: the embedded metadata describes the actual file (dims, quant
+        # dtype) and wins over any config.json the repo happens to ship.
+        cfg = {**cfg, **{k: v for k, v in index.hf_config().items() if v}}
     if cmap is None:
         cmap = canonicalize(index.names)
 
@@ -129,8 +135,9 @@ def read_signature(
         norm_eps=cfg.get("rms_norm_eps", cfg.get("layer_norm_eps")),
         torch_dtype=cfg.get("torch_dtype", ""),
         tie_word_embeddings=bool(cfg.get("tie_word_embeddings", False)),
+        weights_format=getattr(index, "weights_format", ""),
         inventory_hash=_inventory_hash(index.tensors),
-        tokenizer_hash=_tokenizer_hash(source),
+        tokenizer_hash=_tokenizer_hash(source) or getattr(index, "tokenizer_hash", ""),
         n_params=sum(t.numel for t in index.tensors.values()),
         canonical_coverage=round(cmap.coverage, 4),
     )

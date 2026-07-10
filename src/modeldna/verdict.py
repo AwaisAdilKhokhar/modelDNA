@@ -8,6 +8,7 @@ worst failure mode of this tool is a false accusation.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
@@ -198,4 +199,14 @@ def judge(
     cls = _classify_positive(
         best.evidence, suspect_dtype, dtypes.get(best.candidate_id, ""), th
     )
-    return Verdict(cls, best.probability, best, results)
+    verdict = Verdict(cls, best.probability, best, results)
+    if cls == VerdictClass.FINE_TUNE and re.match(r"i?q\d", suspect_dtype or ""):
+        # deep quants (Q4 and below) put more noise on the samples than a
+        # light SFT does — the two regimes overlap and we refuse to guess
+        verdict.notes.append(
+            f"suspect weights are {suspect_dtype}-quantized; at this depth "
+            "quantization noise and a light fine-tune are not separable from "
+            "sampled weights alone, so this may equally be a quantized copy "
+            f"of {best.candidate_id}"
+        )
+    return verdict

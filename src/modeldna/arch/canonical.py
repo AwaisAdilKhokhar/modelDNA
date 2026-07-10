@@ -67,6 +67,22 @@ _LAYER_PATTERNS: list[tuple[str, str]] = [
     (r"transformer\.h\.(\d+)\.mlp\.c_proj\.(weight|bias)", "mlp.fc2"),
     (r"transformer\.h\.(\d+)\.ln_1\.(weight|bias)", "norm.in"),
     (r"transformer\.h\.(\d+)\.ln_2\.(weight|bias)", "norm.post"),
+    # GGUF / llama.cpp (served dequantized by io.gguf). llama.cpp uses
+    # ffn_up/ffn_down for every family, so fc1/fc2-style models (GPT-2,
+    # NeoX, Phi-2) land on mlp.up/mlp.down here — those roles then simply
+    # don't overlap with the safetensors fingerprint and are skipped.
+    (r"blk\.(\d+)\.attn_q\.(weight|bias)", "attn.q"),
+    (r"blk\.(\d+)\.attn_k\.(weight|bias)", "attn.k"),
+    (r"blk\.(\d+)\.attn_v\.(weight|bias)", "attn.v"),
+    (r"blk\.(\d+)\.attn_output\.(weight|bias)", "attn.o"),
+    (r"blk\.(\d+)\.attn_qkv\.(weight|bias)", "attn.qkv"),
+    (r"blk\.(\d+)\.ffn_gate\.(weight|bias)", "mlp.gate"),
+    (r"blk\.(\d+)\.ffn_up\.(weight|bias)", "mlp.up"),
+    (r"blk\.(\d+)\.ffn_down\.(weight|bias)", "mlp.down"),
+    (r"blk\.(\d+)\.attn_norm\.(weight|bias)", "norm.in"),
+    (r"blk\.(\d+)\.ffn_norm\.(weight|bias)", "norm.post"),
+    (r"blk\.(\d+)\.attn_q_norm\.(weight|bias)", "norm.q"),
+    (r"blk\.(\d+)\.attn_k_norm\.(weight|bias)", "norm.k"),
 ]
 
 _GLOBAL_PATTERNS: list[tuple[str, str]] = [
@@ -79,6 +95,10 @@ _GLOBAL_PATTERNS: list[tuple[str, str]] = [
     (r"model\.norm\.(weight|bias)", "norm.final"),
     (r"gpt_neox\.final_layer_norm\.(weight|bias)", "norm.final"),
     (r"transformer\.ln_f\.(weight|bias)", "norm.final"),
+    # GGUF / llama.cpp
+    (r"token_embd\.weight", "embed"),
+    (r"output\.weight", "lm_head"),
+    (r"output_norm\.(weight|bias)", "norm.final"),
 ]
 
 _COMPILED_LAYER = [(re.compile(p + r"$"), role) for p, role in _LAYER_PATTERNS]

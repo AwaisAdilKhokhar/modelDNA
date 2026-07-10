@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import os
 from bisect import bisect_right
-from typing import Iterable
+from typing import Any, Iterable
 
 import numpy as np
 
@@ -70,43 +70,23 @@ def _coalesce(ranges: Iterable[tuple[int, int]], gap: int) -> list[tuple[int, in
     return [(s, e) for s, e in merged]
 
 
-class WeightIndex:
-    """Index of all tensors across a model's safetensors shards."""
+class BaseWeightIndex:
+    """Tensor catalog plus the prefetch/read cache, shared across formats.
+
+    Subclasses populate ``self.tensors`` and implement the element-level
+    reads (``read_tensor``, ``read_flat_slice``, ``plan_sample``,
+    ``read_sample``, ``plan_flat_slice``); everything here works purely in
+    byte ranges and is format-agnostic.
+    """
+
+    #: format tag recorded in the arch signature ("safetensors", "gguf:<file>")
+    weights_format: str = ""
 
     def __init__(self, source: ModelSource):
         self.source = source
-        self.tensors: dict[str, TensorInfo] = {}
+        self.tensors: dict[str, Any] = {}
         # shard -> (sorted blob starts, [(start, end, bytes), ...])
         self._preloaded: dict[str, tuple[list[int], list[tuple[int, int, bytes]]]] = {}
-        self._load()
-
-    def _load(self) -> None:
-        files = self.source.list_files()
-        shards = self._discover_shards(files)
-        if not shards:
-            raise WeightIndexError(
-                f"no safetensors weights found in {self.source.name}"
-            )
-        for shard in shards:
-            first8 = self.source.read_range(shard, 0, HEADER_SIZE_BYTES)
-            hlen = header_length(first8)
-            header = self.source.read_range(shard, HEADER_SIZE_BYTES, HEADER_SIZE_BYTES + hlen)
-            for name, info in parse_header(header, shard).items():
-                if name in self.tensors:
-                    raise SafetensorsError(f"tensor {name!r} appears in multiple shards")
-                self.tensors[name] = info
-
-    def _discover_shards(self, files: list[str]) -> list[str]:
-        import json
-
-        # Sharded checkpoints ship an index file mapping tensors to shards;
-        # trust it when present so we skip stray safetensors files.
-        if "model.safetensors.index.json" in files:
-            idx = json.loads(self.source.read_text("model.safetensors.index.json"))
-            return sorted(set(idx.get("weight_map", {}).values()))
-        candidates = [f for f in files if f.endswith(".safetensors") and "/" not in f]
-        # Adapters live alongside merged weights in some repos; skip them.
-        return sorted(f for f in candidates if not f.startswith("adapter"))
 
     # -- queries ------------------------------------------------------------
 
@@ -114,7 +94,7 @@ class WeightIndex:
     def names(self) -> list[str]:
         return list(self.tensors.keys())
 
-    def info(self, name: str) -> TensorInfo:
+    def info(self, name: str):
         try:
             return self.tensors[name]
         except KeyError:
@@ -163,6 +143,45 @@ class WeightIndex:
                     return blob[start - s : end - s]
         return self.source.read_range(shard, start, end)
 
+
+class WeightIndex(BaseWeightIndex):
+    """Index of all tensors across a model's safetensors shards."""
+
+    weights_format = "safetensors"
+
+    def __init__(self, source: ModelSource):
+        super().__init__(source)
+        self.tensors: dict[str, TensorInfo] = {}
+        self._load()
+
+    def _load(self) -> None:
+        files = self.source.list_files()
+        shards = self._discover_shards(files)
+        if not shards:
+            raise WeightIndexError(
+                f"no safetensors weights found in {self.source.name}"
+            )
+        for shard in shards:
+            first8 = self.source.read_range(shard, 0, HEADER_SIZE_BYTES)
+            hlen = header_length(first8)
+            header = self.source.read_range(shard, HEADER_SIZE_BYTES, HEADER_SIZE_BYTES + hlen)
+            for name, info in parse_header(header, shard).items():
+                if name in self.tensors:
+                    raise SafetensorsError(f"tensor {name!r} appears in multiple shards")
+                self.tensors[name] = info
+
+    def _discover_shards(self, files: list[str]) -> list[str]:
+        import json
+
+        # Sharded checkpoints ship an index file mapping tensors to shards;
+        # trust it when present so we skip stray safetensors files.
+        if "model.safetensors.index.json" in files:
+            idx = json.loads(self.source.read_text("model.safetensors.index.json"))
+            return sorted(set(idx.get("weight_map", {}).values()))
+        candidates = [f for f in files if f.endswith(".safetensors") and "/" not in f]
+        # Adapters live alongside merged weights in some repos; skip them.
+        return sorted(f for f in candidates if not f.startswith("adapter"))
+
     # -- reads --------------------------------------------------------------
 
     def read_tensor(self, name: str) -> np.ndarray:
@@ -178,6 +197,14 @@ class WeightIndex:
         b0 = t.start + start_elem * t.itemsize
         raw = self._read(t.shard, b0, b0 + n_elem * t.itemsize)
         return decode_tensor(raw, t.dtype)
+
+    def plan_flat_slice(self, name: str, start_elem: int, n_elem: int) -> list[tuple[int, int]]:
+        """Byte ranges read_flat_slice() with the same arguments will need."""
+        t = self.info(name)
+        start_elem = max(0, min(start_elem, t.numel))
+        n_elem = min(n_elem, t.numel - start_elem)
+        b0 = t.start + start_elem * t.itemsize
+        return [(b0, b0 + n_elem * t.itemsize)]
 
     def plan_sample(
         self, name: str, seed: int, n_blocks: int = 64, block_len: int = 4096
@@ -222,3 +249,24 @@ class WeightIndex:
                     out.append(decode_tensor(raw, t.dtype))
                     break
         return out
+
+
+def open_weight_index(source: ModelSource) -> BaseWeightIndex:
+    """Open whatever weight format the repo ships.
+
+    Safetensors wins when both are present (full precision beats any quant);
+    GGUF-only repos — a huge share of what people actually download — get
+    the dequantize-and-sample index instead of an abstention.
+    """
+    files = source.list_files()
+    has_safetensors = "model.safetensors.index.json" in files or any(
+        f.endswith(".safetensors") and "/" not in f and not f.startswith("adapter")
+        for f in files
+    )
+    if has_safetensors:
+        return WeightIndex(source)
+    if any(f.lower().endswith(".gguf") for f in files):
+        from modeldna.io.gguf import GGUFWeightIndex
+
+        return GGUFWeightIndex(source)
+    raise WeightIndexError(f"no safetensors or GGUF weights found in {source.name}")

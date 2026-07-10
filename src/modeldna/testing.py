@@ -9,6 +9,7 @@ while `base_weights` + `noise` simulates fine-tuning / continued training.
 from __future__ import annotations
 
 import json
+import re
 import struct
 from pathlib import Path
 
@@ -44,6 +45,115 @@ def write_safetensors(path: Path, tensors: dict[str, np.ndarray]) -> None:
         f.write(struct.pack("<Q", len(hbytes)))
         f.write(hbytes)
         f.write(payload)
+
+
+#: HF tensor name -> GGUF name, as convert_hf_to_gguf.py writes llama models
+_HF_TO_GGUF = {
+    "model.embed_tokens.weight": "token_embd.weight",
+    "lm_head.weight": "output.weight",
+    "model.norm.weight": "output_norm.weight",
+}
+_HF_TO_GGUF_LAYER = {
+    "self_attn.q_proj": "attn_q",
+    "self_attn.k_proj": "attn_k",
+    "self_attn.v_proj": "attn_v",
+    "self_attn.o_proj": "attn_output",
+    "mlp.gate_proj": "ffn_gate",
+    "mlp.up_proj": "ffn_up",
+    "mlp.down_proj": "ffn_down",
+    "input_layernorm": "attn_norm",
+    "post_attention_layernorm": "ffn_norm",
+}
+
+
+def _gguf_name(hf_name: str) -> str:
+    if hf_name in _HF_TO_GGUF:
+        return _HF_TO_GGUF[hf_name]
+    m = re.match(r"model\.layers\.(\d+)\.(.+)\.(weight|bias)$", hf_name)
+    assert m, f"no GGUF mapping for {hf_name}"
+    return f"blk.{m.group(1)}.{_HF_TO_GGUF_LAYER[m.group(2)]}.{m.group(3)}"
+
+
+def _permute_llama(w: np.ndarray, n_head: int) -> np.ndarray:
+    """The q/k row rewrite convert_hf_to_gguf.py applies to llama models."""
+    return (
+        w.reshape(n_head, 2, w.shape[0] // n_head // 2, *w.shape[1:])
+        .swapaxes(1, 2)
+        .reshape(w.shape)
+    )
+
+
+def write_gguf_llama(
+    root: Path,
+    tensors: dict[str, np.ndarray],
+    *,
+    n_heads: int = 4,
+    n_kv_heads: int = 2,
+    vocab: int = 128,
+    quant: str = "F32",
+    filename: str | None = None,
+    parts: int = 1,
+) -> list[Path]:
+    """Write HF-named llama tensors as a GGUF model dir, like llama.cpp would.
+
+    Uses the official ``gguf`` writer (an implementation independent of our
+    parser), renames tensors to the llama.cpp scheme, applies the converter's
+    q/k row permutation, and quantizes 2-D weights to ``quant``. With
+    ``parts > 1`` the tensors are spread over a llama.cpp-style split file
+    set. Returns the written paths.
+    """
+    from gguf import GGUFWriter
+    from gguf.constants import GGMLQuantizationType
+    from gguf.quants import quantize
+
+    qtype = GGMLQuantizationType[quant.upper()]
+    hidden = tensors["model.norm.weight"].shape[0]
+    n_layers = 1 + max(
+        int(m.group(1))
+        for m in (re.match(r"model\.layers\.(\d+)\.", n) for n in tensors)
+        if m
+    )
+    converted: list[tuple[str, np.ndarray]] = []
+    for name, arr in tensors.items():
+        if ".self_attn.q_proj." in name:
+            arr = _permute_llama(arr, n_heads)
+        elif ".self_attn.k_proj." in name:
+            arr = _permute_llama(arr, n_kv_heads)
+        converted.append((_gguf_name(name), np.ascontiguousarray(arr)))
+
+    root.mkdir(parents=True, exist_ok=True)
+    stem = filename or f"tiny-llama-{quant.lower()}.gguf"
+    if parts == 1:
+        paths = [root / stem]
+        chunks = [converted]
+    else:
+        base = stem[: -len(".gguf")]
+        paths = [root / f"{base}-{i + 1:05d}-of-{parts:05d}.gguf" for i in range(parts)]
+        step = -(-len(converted) // parts)
+        chunks = [converted[i * step : (i + 1) * step] for i in range(parts)]
+
+    for path, chunk in zip(paths, chunks):
+        w = GGUFWriter(str(path), arch="llama")
+        w.add_block_count(n_layers)
+        w.add_embedding_length(hidden)
+        w.add_head_count(n_heads)
+        w.add_head_count_kv(n_kv_heads)
+        w.add_feed_forward_length(tensors["model.layers.0.mlp.up_proj.weight"].shape[0])
+        w.add_rope_freq_base(10000.0)
+        w.add_layer_norm_rms_eps(1e-5)
+        w.add_vocab_size(vocab)
+        for name, arr in chunk:
+            if arr.ndim == 2 and quant.upper() != "F32":
+                # writer derives the logical shape from the quantized bytes
+                q = quantize(arr.astype(np.float32), qtype)
+                w.add_tensor(name, q, raw_dtype=qtype)
+            else:
+                w.add_tensor(name, arr.astype(np.float32))
+        w.write_header_to_file()
+        w.write_kv_data_to_file()
+        w.write_tensors_to_file()
+        w.close()
+    return paths
 
 
 def _rand_matrix(rng: np.random.Generator, rows: int, cols: int, scale: float) -> np.ndarray:

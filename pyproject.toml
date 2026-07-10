@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
 authors = [{ name = "Muhammad Awais Bin Adil", email = "binadilawais@gmail.com" }]
-keywords = ["llm", "fingerprinting", "provenance", "lineage", "safetensors", "forensics"]
+keywords = ["llm", "fingerprinting", "provenance", "lineage", "safetensors", "gguf", "forensics"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -26,6 +26,9 @@ dependencies = [
     "huggingface_hub>=0.20",
     "typer>=0.9",
     "rich>=13.0",
+    # official llama.cpp package: reference numpy dequantizers for every
+    # ggml quant type (we parse the GGUF container ourselves)
+    "gguf>=0.10",
 ]
 
 [project.optional-dependencies]
