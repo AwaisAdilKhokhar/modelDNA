@@ -17,9 +17,8 @@ from pathlib import Path
 import markdown
 
 HERE = Path(__file__).parent
-SRC = HERE / "modeldna-tech-report.md"
+DEFAULT_SRC = HERE / "modeldna-tech-report.md"
 PNG = HERE / "fig_slerp_tcurves.png"
-PDF_OUT = HERE / "modeldna-tech-report.pdf"
 BROWSER = os.environ.get(
     "MODELDNA_BROWSER",
     r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
@@ -65,11 +64,14 @@ blockquote { margin: 0.6rem 1.2rem; color: #333; }
 """
 
 
-def main() -> None:
-    text = SRC.read_text(encoding="utf-8")
-    uri = "data:image/png;base64," + base64.b64encode(PNG.read_bytes()).decode()
-    text = text.replace("(fig_slerp_tcurves.png)", "(" + uri + ")")
-    # $x$ inline math -> italics (the report uses unicode math otherwise)
+def render(src: Path) -> Path:
+    src = src.resolve()  # Edge resolves a relative --print-to-pdf against its own cwd
+    pdf_out = src.with_suffix(".pdf")
+    text = src.read_text(encoding="utf-8")
+    if PNG.exists():
+        uri = "data:image/png;base64," + base64.b64encode(PNG.read_bytes()).decode()
+        text = text.replace("(fig_slerp_tcurves.png)", "(" + uri + ")")
+    # $x$ inline math -> italics (the reports use unicode math otherwise)
     text = re.sub(r"\$([^$]{1,12})\$", r"*\1*", text)
 
     body = markdown.markdown(
@@ -79,7 +81,7 @@ def main() -> None:
         html = Path(td) / "report.html"
         html.write_text(
             "<!doctype html><html><head><meta charset='utf-8'>"
-            f"<title>modelDNA tech report</title><style>{CSS}</style></head>"
+            f"<title>{src.stem}</title><style>{CSS}</style></head>"
             f"<body>{body}</body></html>",
             encoding="utf-8",
         )
@@ -89,13 +91,21 @@ def main() -> None:
                 "--headless",
                 "--disable-gpu",
                 "--no-pdf-header-footer",
-                f"--print-to-pdf={PDF_OUT}",
+                f"--print-to-pdf={pdf_out}",
                 html.as_uri(),
             ],
             check=True,
             timeout=120,
         )
-    print("wrote", PDF_OUT, PDF_OUT.stat().st_size, "bytes")
+    print("wrote", pdf_out, pdf_out.stat().st_size, "bytes")
+    return pdf_out
+
+
+def main() -> None:
+    import sys
+
+    src = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_SRC
+    render(src)
 
 
 if __name__ == "__main__":

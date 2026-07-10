@@ -292,6 +292,12 @@ fingerprint cache, and full per-pair results
 `python benchmarks/real_lineagebench.py --no-fetch` reproduces the numbers
 without touching the Hub.
 
+LineageBench is published as a named public dataset —
+[**AwaisAdilKhokhar/lineagebench**](https://huggingface.co/datasets/AwaisAdilKhokhar/lineagebench)
+(ground truth with per-pair citations + this tool's reference results) — and
+written up in [`paper/lineagebench.md`](paper/lineagebench.md). Rebuild and
+republish the dataset with `python scripts/export_lineagebench.py --push`.
+
 ## Limitations — read before citing a verdict
 
 - **Statistical evidence, not proof.** Output is always "weights are

@@ -208,6 +208,7 @@ Everything in this report is public:
 - **Atlas**: https://awaisadilkhokhar.github.io/modelDNA/. The inferred family tree of 55 models (475 depth-compatible pairwise comparisons, 116 edges), every edge carrying its evidence, decomposed merges drawn with their fitted mixture weights.
 - **Dataset**: https://huggingface.co/datasets/AwaisAdilKhokhar/modeldna-atlas. Fingerprints, pairwise evidence, the edge list, and the pullable reference DB, refreshed weekly by CI.
 - **Benchmarks**: `benchmarks/` in the repository, with ground-truth manifests carrying per-pair citations, committed fingerprint caches, and harnesses that reproduce every number here offline (`--no-fetch`).
+- **LineageBench**: the real-model benchmark of Section 7.2 as a named public dataset, https://huggingface.co/datasets/AwaisAdilKhokhar/lineagebench, with a standalone write-up at [`paper/lineagebench.md`](lineagebench.md).
 
 ## References
 
