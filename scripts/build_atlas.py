@@ -27,6 +27,7 @@ from modeldna.db.store import ReferenceDB, default_db_path
 REPO = Path(__file__).resolve().parents[1]
 BENCH_CACHE = REPO / "benchmarks" / "lineagebench_cache"
 MERGE_CACHE = REPO / "benchmarks" / "mergebench_cache"
+GROWTH_CACHE = REPO / "benchmarks" / "atlas_growth_cache"  # trending models, grown weekly
 PAIRS = REPO / "benchmarks" / "lineagebench_pairs.json"
 RESULTS = REPO / "benchmarks" / "lineagebench_results.json"
 MERGE_RESULTS = REPO / "benchmarks" / "merge_decompose_results.json"
@@ -64,6 +65,8 @@ def load_fingerprints() -> tuple[dict, dict, set[str]]:
     sources.append(("bench", ReferenceDB(BENCH_CACHE)))
     if MERGE_CACHE.exists():
         sources.append(("mergebench", ReferenceDB(MERGE_CACHE)))
+    if GROWTH_CACHE.exists():
+        sources.append(("growth", ReferenceDB(GROWTH_CACHE)))
     for kind, db in sources:
         for e in db.entries():
             if kind == "ref":

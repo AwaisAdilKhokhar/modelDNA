@@ -5,10 +5,12 @@
 #
 # Fingerprint sources on the runner: `modeldna db pull` installs the
 # published reference DB; the LineageBench/mergebench caches are committed.
-# This is also the hook for the auto-growing Atlas: a future step that
-# fingerprints trending Hub models into the DB slots in before the builds.
+# The "Grow Atlas" step fingerprints the week's trending Hub models into the
+# committed growth cache before the builds, so the graph actually gets bigger
+# week over week (build_atlas.py and export_dataset.py load that cache too).
 #
-# Needs an HF_TOKEN repo secret with WRITE access (the dataset push).
+# Needs an HF_TOKEN repo secret with WRITE access (the dataset push; also lets
+# the grow step reach gated trending repos — ungated ones need no token).
 name: atlas-refresh
 
 on:
@@ -38,6 +40,10 @@ jobs:
           pip install -e . huggingface_hub
       - name: Pull reference DB
         run: modeldna db pull
+      - name: Grow Atlas (fingerprint trending Hub models)
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python scripts/grow_atlas.py --limit 8
       - name: Rebuild Atlas
         run: python scripts/build_atlas.py
       - name: Build and push dataset
@@ -48,7 +54,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add site/index.html
+          git add site/index.html benchmarks/atlas_growth_cache
           if git diff --cached --quiet; then
             echo "Atlas unchanged; nothing to commit"
           else

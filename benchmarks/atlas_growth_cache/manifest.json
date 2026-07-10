@@ -1,0 +1,50 @@
+{
+  "db_version": 2,
+  "updated_at": "2026-07-10T17:34:54+00:00",
+  "entries": [
+    {
+      "model_id": "tencent/Hy3",
+      "family": "tencent",
+      "file": "tencent__Hy3.json.gz",
+      "revision": "",
+      "core_shape": [
+        4096,
+        80,
+        64,
+        8,
+        13312
+      ],
+      "n_layers": 80,
+      "inventory_hash": "b7b624e617e8bed54959cc5050920897b5894ad97b5f53ded517b4eb3ee00eea",
+      "tokenizer_hash": "446e0b59cd941637c0ddfd84e12ee1f49480fd12097f86a9d2fec8ebd0c7ff6c",
+      "torch_dtype": "",
+      "meta": {
+        "source": "hub-trending",
+        "sort": "trendingScore"
+      },
+      "added_at": "2026-07-10T17:28:22+00:00"
+    },
+    {
+      "model_id": "zai-org/GLM-5.2",
+      "family": "glm",
+      "file": "zai-org__GLM-5.2.json.gz",
+      "revision": "",
+      "core_shape": [
+        6144,
+        78,
+        64,
+        64,
+        12288
+      ],
+      "n_layers": 78,
+      "inventory_hash": "6f56e4334b5d951182d59bf512db3592fbb9876be3b2680b67f267dea9486ea1",
+      "tokenizer_hash": "19e773648cb4e65de8660ea6365e10acca112d42a854923df93db4a6f333a82d",
+      "torch_dtype": "",
+      "meta": {
+        "source": "hub-trending",
+        "sort": "trendingScore"
+      },
+      "added_at": "2026-07-10T17:34:54+00:00"
+    }
+  ]
+}
