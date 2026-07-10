@@ -107,6 +107,15 @@ def grow(
         try:
             src = open_source(repo)
             fp = extract_fingerprint(src, mode="fast", model_id=repo)
+            if fp.arch.n_layers == 0 or not fp.sigma_curves:
+                # nothing readable came out — packed/quantized formats (NVFP4,
+                # GPTQ) and novel architectures fingerprint to an empty shell.
+                # A zero-layer entry is depth-compatible only with other
+                # zero-layer entries, so keeping it would risk comparing
+                # unrelated unreadable models to each other. Drop it.
+                failed.append(repo)
+                print(f"  skipped (no readable weight signals; {fp.arch.model_type!r})")
+                continue
             cache.add(fp, family=guess_family(repo),
                       meta={"source": "hub-trending", "sort": sort})
             added.append(repo)
