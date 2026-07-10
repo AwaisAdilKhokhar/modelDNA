@@ -60,7 +60,7 @@ table {
 th, td { border: 0.5pt solid #888; padding: 3px 9px; text-align: left; }
 th { background: #f0efec; font-weight: 600; }
 img { max-width: 100%; display: block; margin: 1rem auto 0.3rem; page-break-inside: avoid; }
-img + em, p > em:only-child { display: block; font-size: 0.9em; color: #333; }
+p:has(> img) + p { text-align: left; font-size: 0.9em; color: #333; }
 blockquote { margin: 0.6rem 1.2rem; color: #333; }
 """
 
