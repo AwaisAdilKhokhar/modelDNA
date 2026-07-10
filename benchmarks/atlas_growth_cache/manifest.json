@@ -1,6 +1,6 @@
 {
-  "db_version": 2,
-  "updated_at": "2026-07-10T17:34:54+00:00",
+  "db_version": 10,
+  "updated_at": "2026-07-10T20:07:25+00:00",
   "entries": [
     {
       "model_id": "tencent/Hy3",
@@ -45,6 +45,182 @@
         "sort": "trendingScore"
       },
       "added_at": "2026-07-10T17:34:54+00:00"
+    },
+    {
+      "model_id": "InternScience/Agents-A1",
+      "family": "internscience",
+      "file": "InternScience__Agents-A1.json.gz",
+      "revision": "",
+      "core_shape": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "n_layers": 0,
+      "inventory_hash": "855ba2a7f5136badbdb088d057170f0714ce54767c4bb9bf6ea8c05c4a56b272",
+      "tokenizer_hash": "87a7830d63fcf43bf241c3c5242e96e62dd3fdc29224ca26fed8ea333db72de4",
+      "torch_dtype": "",
+      "meta": {
+        "source": "hub-trending",
+        "sort": "trendingScore"
+      },
+      "added_at": "2026-07-10T20:04:52+00:00"
+    },
+    {
+      "model_id": "AliesTaha/fable-traces",
+      "family": "aliestaha",
+      "file": "AliesTaha__fable-traces.json.gz",
+      "revision": "",
+      "core_shape": [
+        2560,
+        36,
+        32,
+        8,
+        9728
+      ],
+      "n_layers": 36,
+      "inventory_hash": "cd61b76b95d21b2b8b216aea96791d84049345a275723416599d9984a9ef2f1b",
+      "tokenizer_hash": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4",
+      "torch_dtype": "",
+      "meta": {
+        "source": "hub-trending",
+        "sort": "trendingScore"
+      },
+      "added_at": "2026-07-10T20:05:49+00:00"
+    },
+    {
+      "model_id": "meituan-longcat/LongCat-2.0",
+      "family": "meituan-longcat",
+      "file": "meituan-longcat__LongCat-2.0.json.gz",
+      "revision": "",
+      "core_shape": [
+        8192,
+        0,
+        64,
+        64,
+        0
+      ],
+      "n_layers": 0,
+      "inventory_hash": "20f790ed9a9b3560bb12d441191ceeb96b224824e16b8fe4d47de2e22c7686be",
+      "tokenizer_hash": "7b1163a456094f3c86c1a32f7b4153d603c589f4c05c3aedbb4d8ad8e0419e7d",
+      "torch_dtype": "",
+      "meta": {
+        "source": "hub-trending",
+        "sort": "trendingScore"
+      },
+      "added_at": "2026-07-10T20:07:05+00:00"
+    },
+    {
+      "model_id": "nvidia/NVIDIA-Nemotron-Labs-3-Puzzle-75B-A9B-NVFP4",
+      "family": "nvidia",
+      "file": "nvidia__NVIDIA-Nemotron-Labs-3-Puzzle-75B-A9B-NVFP4.json.gz",
+      "revision": "",
+      "core_shape": [
+        4096,
+        0,
+        32,
+        2,
+        21504
+      ],
+      "n_layers": 0,
+      "inventory_hash": "bfe726d516a011071cae7ccaaf3f714ba367f81a4ec0c2df9b0f7e1282278d3b",
+      "tokenizer_hash": "623c34567aebb18582765289fbe23d901c62704d6518d71866e0e58db892b5b7",
+      "torch_dtype": "",
+      "meta": {
+        "source": "hub-trending",
+        "sort": "trendingScore"
+      },
+      "added_at": "2026-07-10T20:07:11+00:00"
+    },
+    {
+      "model_id": "nvidia/Qwen3.6-27B-NVFP4",
+      "family": "nvidia",
+      "file": "nvidia__Qwen3.6-27B-NVFP4.json.gz",
+      "revision": "",
+      "core_shape": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "n_layers": 0,
+      "inventory_hash": "63eaffab6e942af624bb7c2b01ecb6a7618a17695fb36dfd178e0b788043622a",
+      "tokenizer_hash": "5f9e4d4901a92b997e463c1f46055088b6cca5ca61a6522d1b9f64c4bb81cb42",
+      "torch_dtype": "",
+      "meta": {
+        "source": "hub-trending",
+        "sort": "trendingScore"
+      },
+      "added_at": "2026-07-10T20:07:12+00:00"
+    },
+    {
+      "model_id": "empero-ai/Qwythos-9B-Claude-Mythos-5-1M",
+      "family": "empero-ai",
+      "file": "empero-ai__Qwythos-9B-Claude-Mythos-5-1M.json.gz",
+      "revision": "",
+      "core_shape": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "n_layers": 0,
+      "inventory_hash": "726f3bdc2467cef164d36203f3096d28ba7ab4de621b7bbe2d6d6f3d365f22f7",
+      "tokenizer_hash": "639e352c0f904c1875d448ebed6f6faac005fd3eb58393b7f1fb3ff044e5ca03",
+      "torch_dtype": "",
+      "meta": {
+        "source": "hub-trending",
+        "sort": "trendingScore"
+      },
+      "added_at": "2026-07-10T20:07:14+00:00"
+    },
+    {
+      "model_id": "SupraLabs/Supra-Router-51M",
+      "family": "supralabs",
+      "file": "SupraLabs__Supra-Router-51M.json.gz",
+      "revision": "",
+      "core_shape": [
+        512,
+        12,
+        8,
+        4,
+        1408
+      ],
+      "n_layers": 12,
+      "inventory_hash": "6da4b075ff3f517c004179057afbf99e920c9da1fecb7d7787a1065183a9e00f",
+      "tokenizer_hash": "78674e4a6e1ed782c30f506420976a25ee52018212ea90e368b7a1e806982b08",
+      "torch_dtype": "",
+      "meta": {
+        "source": "hub-trending",
+        "sort": "trendingScore"
+      },
+      "added_at": "2026-07-10T20:07:17+00:00"
+    },
+    {
+      "model_id": "openbmb/MiniCPM5-1B",
+      "family": "minicpm",
+      "file": "openbmb__MiniCPM5-1B.json.gz",
+      "revision": "",
+      "core_shape": [
+        1536,
+        24,
+        16,
+        2,
+        4608
+      ],
+      "n_layers": 24,
+      "inventory_hash": "b82e9b0138e43ea16e9cd5701b546190c3c6da79321e031b734979f65a61cc92",
+      "tokenizer_hash": "3e065a558a034185fe299917b398685c1facd0169a9eea1e629eb30c171fed81",
+      "torch_dtype": "bfloat16",
+      "meta": {
+        "source": "hub-trending",
+        "sort": "trendingScore"
+      },
+      "added_at": "2026-07-10T20:07:25+00:00"
     }
   ]
 }
