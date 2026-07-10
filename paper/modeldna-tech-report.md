@@ -1,7 +1,7 @@
 # modelDNA: Calibrated Lineage Verification and Merge Decomposition from Sampled Weight Fingerprints
 
-**Muhammad Awais Bin Adil**
-Independent — binadilawais@gmail.com
+**Muhammad Awais Bin Adil**  
+Independent — binadilawais@gmail.com  
 Draft v0.1, July 2026
 
 Code: https://github.com/AwaisAdilKhokhar/modelDNA · Live scanner: https://huggingface.co/spaces/AwaisAdilKhokhar/modelDNA · Data: https://huggingface.co/datasets/AwaisAdilKhokhar/modeldna-atlas
