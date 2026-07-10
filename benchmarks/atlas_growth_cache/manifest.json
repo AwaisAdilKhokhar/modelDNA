@@ -1,6 +1,6 @@
 {
-  "db_version": 15,
-  "updated_at": "2026-07-10T20:11:47+00:00",
+  "db_version": 23,
+  "updated_at": "2026-07-10T20:19:32+00:00",
   "entries": [
     {
       "model_id": "tencent/Hy3",
@@ -111,6 +111,182 @@
         "sort": "trendingScore"
       },
       "added_at": "2026-07-10T20:07:25+00:00"
+    },
+    {
+      "model_id": "tencent/Hy3-FP8",
+      "family": "tencent",
+      "file": "tencent__Hy3-FP8.json.gz",
+      "revision": "",
+      "core_shape": [
+        4096,
+        80,
+        64,
+        8,
+        13312
+      ],
+      "n_layers": 80,
+      "inventory_hash": "cbb659832b261c3a7aab22c141df6496c26beb85dacdf1a18998354054ba398b",
+      "tokenizer_hash": "446e0b59cd941637c0ddfd84e12ee1f49480fd12097f86a9d2fec8ebd0c7ff6c",
+      "torch_dtype": "",
+      "meta": {
+        "source": "hub-trending",
+        "sort": "trendingScore"
+      },
+      "added_at": "2026-07-10T20:14:49+00:00"
+    },
+    {
+      "model_id": "poolside/Laguna-XS-2.1",
+      "family": "poolside",
+      "file": "poolside__Laguna-XS-2.1.json.gz",
+      "revision": "",
+      "core_shape": [
+        2048,
+        40,
+        48,
+        8,
+        8192
+      ],
+      "n_layers": 40,
+      "inventory_hash": "a443769574605b658a356512b292339e9a7b004929a1c5d2536d07cf18d4ecdf",
+      "tokenizer_hash": "807c53a95141e77c14e45f68c51db3f84d2ea6b555a6ea832bc99c88dae6a279",
+      "torch_dtype": "bfloat16",
+      "meta": {
+        "source": "hub-trending",
+        "sort": "trendingScore"
+      },
+      "added_at": "2026-07-10T20:15:22+00:00"
+    },
+    {
+      "model_id": "nvidia/GLM-5.2-NVFP4",
+      "family": "nvidia",
+      "file": "nvidia__GLM-5.2-NVFP4.json.gz",
+      "revision": "",
+      "core_shape": [
+        6144,
+        78,
+        64,
+        64,
+        12288
+      ],
+      "n_layers": 78,
+      "inventory_hash": "4635a2844d023654f4f205fe8037a84d2dd095b2f42ffb983ba89b21972edcc0",
+      "tokenizer_hash": "19e773648cb4e65de8660ea6365e10acca112d42a854923df93db4a6f333a82d",
+      "torch_dtype": "",
+      "meta": {
+        "source": "hub-trending",
+        "sort": "trendingScore"
+      },
+      "added_at": "2026-07-10T20:15:43+00:00"
+    },
+    {
+      "model_id": "DeepHat/DeepHat-V1-7B",
+      "family": "deephat",
+      "file": "DeepHat__DeepHat-V1-7B.json.gz",
+      "revision": "",
+      "core_shape": [
+        3584,
+        28,
+        28,
+        4,
+        18944
+      ],
+      "n_layers": 28,
+      "inventory_hash": "57b5d0d904e4e04db13334a388118f03db76213614ff782edbdab514f95f8984",
+      "tokenizer_hash": "9c5ae00e602b8860cbd784ba82a8aa14e8feecec692e7076590d014d7b7fdafa",
+      "torch_dtype": "bfloat16",
+      "meta": {
+        "source": "hub-trending",
+        "sort": "trendingScore"
+      },
+      "added_at": "2026-07-10T20:16:53+00:00"
+    },
+    {
+      "model_id": "WeiboAI/VibeThinker-3B",
+      "family": "weiboai",
+      "file": "WeiboAI__VibeThinker-3B.json.gz",
+      "revision": "",
+      "core_shape": [
+        2048,
+        36,
+        16,
+        2,
+        11008
+      ],
+      "n_layers": 36,
+      "inventory_hash": "909b5fa569b62667abebb925b464b0fc70393ae27136fcb76f898735c0dd7a80",
+      "tokenizer_hash": "296e081e2f5ecf9d87814aa9b0f4b12d670ed2b2e2be6c84e01a9466c953afb7",
+      "torch_dtype": "bfloat16",
+      "meta": {
+        "source": "hub-trending",
+        "sort": "trendingScore"
+      },
+      "added_at": "2026-07-10T20:18:06+00:00"
+    },
+    {
+      "model_id": "deepseek-ai/DeepSeek-R1",
+      "family": "deepseek-r1",
+      "file": "deepseek-ai__DeepSeek-R1.json.gz",
+      "revision": "",
+      "core_shape": [
+        7168,
+        61,
+        128,
+        128,
+        18432
+      ],
+      "n_layers": 61,
+      "inventory_hash": "57cd85ddc74826e419d20b3113cee819b71d4b3a4a95e8c03862385fbfa74ecb",
+      "tokenizer_hash": "ecb6f9fc369894346f0511f4074ca75cee5cd5f3b06d02f1ba35fcd39f8e121d",
+      "torch_dtype": "bfloat16",
+      "meta": {
+        "source": "hub-trending",
+        "sort": "trendingScore"
+      },
+      "added_at": "2026-07-10T20:18:41+00:00"
+    },
+    {
+      "model_id": "RedHatAI/GLM-5.2-NVFP4-FP8",
+      "family": "redhatai",
+      "file": "RedHatAI__GLM-5.2-NVFP4-FP8.json.gz",
+      "revision": "",
+      "core_shape": [
+        6144,
+        78,
+        64,
+        64,
+        12288
+      ],
+      "n_layers": 78,
+      "inventory_hash": "a8d60ed1942646eed03b5c54a31a5fcfae79ffc20b562b4ec4f362e7e9da7685",
+      "tokenizer_hash": "19e773648cb4e65de8660ea6365e10acca112d42a854923df93db4a6f333a82d",
+      "torch_dtype": "",
+      "meta": {
+        "source": "hub-trending",
+        "sort": "trendingScore"
+      },
+      "added_at": "2026-07-10T20:19:26+00:00"
+    },
+    {
+      "model_id": "openai/gpt-oss-20b",
+      "family": "openai",
+      "file": "openai__gpt-oss-20b.json.gz",
+      "revision": "",
+      "core_shape": [
+        2880,
+        24,
+        64,
+        8,
+        2880
+      ],
+      "n_layers": 24,
+      "inventory_hash": "e2ff7054305db3428d77e19940f33f793d5756ae8ac853fd7c975e607256889b",
+      "tokenizer_hash": "0614fe83cadab421296e664e1f48f4261fa8fef6e03e63bb75c20f38e37d07d3",
+      "torch_dtype": "",
+      "meta": {
+        "source": "hub-trending",
+        "sort": "trendingScore"
+      },
+      "added_at": "2026-07-10T20:19:32+00:00"
     }
   ]
 }
