@@ -1,6 +1,6 @@
 # modelDNA
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21305587.svg)](https://doi.org/10.5281/zenodo.21305587)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21305586.svg)](https://doi.org/10.5281/zenodo.21305586)
 
 **A 23andMe for open-weight models.** modelDNA fingerprints an LLM from its
 weights alone and tells you, with a calibrated probability, which base model
@@ -393,7 +393,7 @@ See the [technical report](https://github.com/AwaisAdilKhokhar/modelDNA/releases
 If you use modelDNA, the atlas dataset, or LineageBench, please cite the
 technical report
 ([PDF](https://github.com/AwaisAdilKhokhar/modelDNA/releases/download/report-v1.0/modeldna-tech-report.pdf)
-· [DOI 10.5281/zenodo.21305587](https://doi.org/10.5281/zenodo.21305587)):
+· [DOI 10.5281/zenodo.21305586](https://doi.org/10.5281/zenodo.21305586)):
 
 ```bibtex
 @techreport{modeldna2026,
@@ -402,7 +402,7 @@ technical report
   author = {Muhammad Awais Bin Adil and Saad Aamir},
   year   = {2026},
   month  = {July},
-  doi    = {10.5281/zenodo.21305587},
+  doi    = {10.5281/zenodo.21305586},
   url    = {https://github.com/AwaisAdilKhokhar/modelDNA},
   note   = {v1.0. Live scanner: huggingface.co/spaces/AwaisAdilKhokhar/modelDNA}
 }
