@@ -57,7 +57,7 @@ No weights beyond the fingerprints were downloaded for any of this. To our knowl
 - 🔬 **[Scan a model live](https://huggingface.co/spaces/AwaisAdilKhokhar/modelDNA)** — paste a repo id, get a verdict in a minute or two.
 - 🧬 **[Explore the Atlas](https://awaisadilkhokhar.github.io/modelDNA/)** — an interactive family tree of 55 real Hub models reconstructed from weight evidence alone, merges drawn with their fitted mixture weights.
 - 📊 **[Build on the data](https://huggingface.co/datasets/AwaisAdilKhokhar/modeldna-atlas)** — fingerprints and the inferred lineage graph, refreshed weekly; plus **[LineageBench](https://huggingface.co/datasets/AwaisAdilKhokhar/lineagebench)**, the org-documented ground-truth benchmark.
-- 📄 **[Read the tech report](https://github.com/AwaisAdilKhokhar/modelDNA/releases/download/report-v1.0/modeldna-tech-report.pdf)** — fingerprint design, verdict engine, merge-decomposition math, and every benchmark number, reproducible offline from committed caches.
+- 📄 **[Read the tech report](https://github.com/AwaisAdilKhokhar/modelDNA/releases/download/report-v1.0/modeldna-tech-report.pdf)** ([DOI 10.5281/zenodo.21305587](https://doi.org/10.5281/zenodo.21305587)) — fingerprint design, verdict engine, merge-decomposition math, and every benchmark number, reproducible offline from committed caches.
 
 Known limits, stated up front: distillation is invisible to weight forensics by construction; merge *attribution* needs a candidate list; a determined retraining-scale adversary is out of scope. The output is always "weights are statistically consistent with derivation from X" — never an accusation.
 
