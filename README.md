@@ -37,6 +37,12 @@ edges labeled with their fitted mixture weights. Regenerate it yourself with `py
 paste a Hub repo id into the hosted scanner and get a verdict in a minute or
 two, no install needed.
 
+**[📄 Read the tech report](https://github.com/AwaisAdilKhokhar/modelDNA/releases/download/report-v1.0/modeldna-tech-report.pdf)** —
+*modelDNA: Calibrated Lineage Verification and Merge Decomposition from
+Sampled Weight Fingerprints* (v1.0, July 2026): the fingerprint design, the
+calibrated verdict engine, the merge-decomposition math, and every benchmark
+number, with sources in [`paper/`](paper/).
+
 **[📊 Build on the data](https://huggingface.co/datasets/AwaisAdilKhokhar/modeldna-atlas)** —
 the fingerprint DB and inferred lineage graph behind the Atlas, published as
 a Hugging Face dataset (`models` / `edges` / `pairs` configs plus the raw
@@ -378,6 +384,23 @@ The methods productized here come from, among others:
 - *Are Robust LLM Fingerprints Adversarially Robust?* (arXiv:2509.26598) — the threat model
 
 See the PRD (`modeldna_prd.md`) for the full research review and roadmap.
+
+## Citing
+
+If you use modelDNA, the atlas dataset, or LineageBench, please cite the
+technical report ([PDF](https://github.com/AwaisAdilKhokhar/modelDNA/releases/download/report-v1.0/modeldna-tech-report.pdf)):
+
+```bibtex
+@techreport{modeldna2026,
+  title  = {modelDNA: Calibrated Lineage Verification and Merge
+            Decomposition from Sampled Weight Fingerprints},
+  author = {Muhammad Awais Bin Adil and Saad Aamir},
+  year   = {2026},
+  month  = {July},
+  url    = {https://github.com/AwaisAdilKhokhar/modelDNA},
+  note   = {v1.0. Live scanner: huggingface.co/spaces/AwaisAdilKhokhar/modelDNA}
+}
+```
 
 ## License
 
