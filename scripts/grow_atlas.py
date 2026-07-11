@@ -56,18 +56,23 @@ def known_ids() -> set[str]:
 def trending_candidates(sort: str, fetch: int) -> list[str]:
     """Trending text-generation repo ids, most-trending first.
 
-    ``sort`` returns descending (most-trending / most-downloaded first) and
-    ``filter="safetensors"`` restricts to repos tagged with safetensors, which
-    is what the fingerprinter can actually read — .bin-only repos are dropped
-    before we waste a fetch on them.
+    ``sort`` returns descending (most-trending / most-downloaded first).
+    Two tag queries cover what the fingerprinter can actually read —
+    ``safetensors`` natively and ``gguf`` via dequantize-and-sample — merged
+    by trending rank so a GGUF-only quant repo competes on equal footing.
+    .bin-only repos never appear, so no fetch is wasted on them.
     """
     from huggingface_hub import HfApi
 
     api = HfApi()
-    models = api.list_models(
-        sort=sort, limit=fetch, pipeline_tag="text-generation", filter="safetensors"
-    )
-    return [m.id for m in models]
+    rank: dict[str, int] = {}
+    for tag in ("safetensors", "gguf"):
+        models = api.list_models(
+            sort=sort, limit=fetch, pipeline_tag="text-generation", filter=tag
+        )
+        for i, m in enumerate(models):
+            rank[m.id] = min(rank.get(m.id, i), i)
+    return sorted(rank, key=rank.get)
 
 
 def grow(
