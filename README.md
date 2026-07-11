@@ -385,7 +385,8 @@ The methods productized here come from, among others:
   *Model Atlas* (arXiv:2503.10633) — population-scale lineage recovery
 - *Are Robust LLM Fingerprints Adversarially Robust?* (arXiv:2509.26598) — the threat model
 
-See the PRD (`modeldna_prd.md`) for the full research review and roadmap.
+See the [technical report](https://github.com/AwaisAdilKhokhar/modelDNA/releases/download/report-v1.0/modeldna-tech-report.pdf)
+(Section 2) for the full research review.
 
 ## Citing
 

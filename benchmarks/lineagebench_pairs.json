@@ -1,5 +1,5 @@
 {
-  "_comment": "Real-model LineageBench v0 ground truth (PRD section 10.1). Positives are Hub models whose parentage is corroborated by the publishing org's own documentation, not just the self-reported base_model tag (the whole premise of modeldna is that the tag alone isn't proof). 'parents' are foundation bases already in the seed reference DB (modeldna_prd.md SEED_MODELS); real_lineagebench.py copies them from the local DB (no re-fetch) and pulls the 'pairs' suspects fresh from the Hub. This is a deliberately smaller, honestly-scoped slice of the PRD's >=300-pair target -- see README for the full-scale roadmap.",
+  "_comment": "Real-model LineageBench v0 ground truth. Positives are Hub models whose parentage is corroborated by the publishing org's own documentation, not just the self-reported base_model tag (the whole premise of modeldna is that the tag alone isn't proof). 'parents' are foundation bases already in the seed reference DB (the SEED_MODELS list); real_lineagebench.py copies them from the local DB (no re-fetch) and pulls the 'pairs' suspects fresh from the Hub. This is a deliberately smaller, honestly-scoped slice of the eventual >=300-pair target -- see README for the full-scale roadmap.",
 
   "parents": [
     "mistralai/Mistral-7B-v0.1",
