@@ -29,23 +29,25 @@ documented parentage at all, and every laundering controversy so far
 by hand. The detection methods are published and validated — modelDNA
 packages them into one command.
 
-**[🧬 Explore the Atlas](https://awaisadilkhokhar.github.io/modelDNA/)** — an
+[![The Atlas: an interactive lineage constellation of 55 Hub models](https://raw.githubusercontent.com/AwaisAdilKhokhar/modelDNA/main/.github/assets/atlas.gif)](https://awaisadilkhokhar.github.io/modelDNA/)
+
+**[Explore the Atlas](https://awaisadilkhokhar.github.io/modelDNA/)** — an
 interactive family tree of 55 real Hub models reconstructed from weight
 evidence alone: hover any edge for the σ-curve, sample-cosine, and spectral
 evidence behind it — including the two decomposed merges, drawn as purple
 edges labeled with their fitted mixture weights. Regenerate it yourself with `python scripts/build_atlas.py`.
 
-**[🔬 Scan a model live](https://huggingface.co/spaces/AwaisAdilKhokhar/modelDNA)** —
+**[Scan a model live](https://huggingface.co/spaces/AwaisAdilKhokhar/modelDNA)** —
 paste a Hub repo id into the hosted scanner and get a verdict in a minute or
 two, no install needed.
 
-**[📄 Read the tech report](https://github.com/AwaisAdilKhokhar/modelDNA/releases/download/report-v1.0/modeldna-tech-report.pdf)** —
+**[Read the tech report](https://github.com/AwaisAdilKhokhar/modelDNA/releases/download/report-v1.0/modeldna-tech-report.pdf)** —
 *modelDNA: Calibrated Lineage Verification and Merge Decomposition from
 Sampled Weight Fingerprints* (v1.0, July 2026): the fingerprint design, the
 calibrated verdict engine, the merge-decomposition math, and every benchmark
 number, with sources in [`paper/`](paper/).
 
-**[📊 Build on the data](https://huggingface.co/datasets/AwaisAdilKhokhar/modeldna-atlas)** —
+**[Build on the data](https://huggingface.co/datasets/AwaisAdilKhokhar/modeldna-atlas)** —
 the fingerprint DB and inferred lineage graph behind the Atlas, published as
 a Hugging Face dataset (`models` / `edges` / `pairs` configs plus the raw
 fingerprints and the pullable reference DB), refreshed weekly by CI.
