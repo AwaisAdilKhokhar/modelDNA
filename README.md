@@ -2,6 +2,8 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21305586.svg)](https://doi.org/10.5281/zenodo.21305586)
 
+[![The Atlas: an interactive lineage constellation of 55 Hub models](https://raw.githubusercontent.com/AwaisAdilKhokhar/modelDNA/main/.github/assets/atlas.gif)](https://awaisadilkhokhar.github.io/modelDNA/)
+
 **A 23andMe for open-weight models.** modelDNA fingerprints an LLM from its
 weights alone and tells you, with a calibrated probability, which base model
 it descends from — regardless of what the README claims.
@@ -28,8 +30,6 @@ documented parentage at all, and every laundering controversy so far
 (Pangu/Qwen 2025, Reflection-70B 2024, Llama3-V 2024) was investigated ad hoc,
 by hand. The detection methods are published and validated — modelDNA
 packages them into one command.
-
-[![The Atlas: an interactive lineage constellation of 55 Hub models](https://raw.githubusercontent.com/AwaisAdilKhokhar/modelDNA/main/.github/assets/atlas.gif)](https://awaisadilkhokhar.github.io/modelDNA/)
 
 **[Explore the Atlas](https://awaisadilkhokhar.github.io/modelDNA/)** — an
 interactive family tree of 55 real Hub models reconstructed from weight
