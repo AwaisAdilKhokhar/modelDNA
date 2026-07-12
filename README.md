@@ -2,7 +2,7 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21305586.svg)](https://doi.org/10.5281/zenodo.21305586)
 
-[![The Atlas: an interactive lineage constellation of 55 Hub models](https://raw.githubusercontent.com/AwaisAdilKhokhar/modelDNA/main/.github/assets/atlas.gif)](https://awaisadilkhokhar.github.io/modelDNA/)
+[![The Atlas: an interactive lineage constellation of 55 Hub models](https://raw.githubusercontent.com/AwaisAdilKhokhar/modelDNA/main/.github/assets/atlas.gif?v=2)](https://awaisadilkhokhar.github.io/modelDNA/)
 
 **A 23andMe for open-weight models.** modelDNA fingerprints an LLM from its
 weights alone and tells you, with a calibrated probability, which base model
