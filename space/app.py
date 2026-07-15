@@ -6,8 +6,9 @@ reference DB (the same archive `modeldna db pull` uses), then each scan
 reads only the sampled weight slices of the suspect model (~250 MB for a
 7B), so a verdict lands in a couple of minutes on Space networking.
 
-Visual language follows the Atlas (site/index.html): paper/ink palette,
-mono eyebrows, --g0 blue accent, light/dark via CSS variables.
+Visual language follows the Atlas (site/index.html): one committed CRT
+mission-control console in every theme — dark instrument panel, neon-green
+readouts, amber field labels, a red-orange frame, and a scanline overlay.
 
 Deployed from the `space/` directory of
 https://github.com/AwaisAdilKhokhar/modelDNA — edit there, not on the Hub.
@@ -385,113 +386,185 @@ def do_decompose(target: str, parents_raw: str, base: str, progress=gr.Progress(
 
 
 CSS = """
-.gradio-container { max-width: 1000px !important; margin: 0 auto !important; }
-footer { display: none !important; }
-
-.gradio-container {
-  --mdna-ink: #0b0b0b; --mdna-ink2: #52514e; --mdna-muted: #898781;
-  --mdna-grid: #e1e0d9; --mdna-axis: #c3c2b7; --mdna-accent: #2a78d6;
-  --mdna-card: #ffffff; --mdna-surface: #fcfcfb;
-  --mdna-shadow: 0 10px 30px rgba(11,11,11,.08);
-}
-.dark .gradio-container, .gradio-container.dark {
-  --mdna-ink: #ffffff; --mdna-ink2: #c3c2b7; --mdna-muted: #898781;
-  --mdna-grid: #2c2c2a; --mdna-axis: #383835; --mdna-accent: #3987e5;
-  --mdna-card: #222221; --mdna-surface: #1a1a19;
-  --mdna-shadow: 0 10px 30px rgba(0,0,0,.5);
+/* One committed look: the whole Space is the Atlas CRT console, in every
+   theme. Dark instrument panel, neon-green readouts, amber field labels,
+   a red-orange frame, and a scanline overlay — the site/index.html palette,
+   transplanted onto Gradio's chrome. Legacy .mdna-* class names are kept so
+   the Python HTML builders never change; only the paint does. */
+:root, .gradio-container, .dark .gradio-container, .gradio-container.dark {
+  --crt-plane:#050807; --crt-bg:#070b0a; --crt-surface:#0a100e;
+  --crt-ink:#c9ead6; --crt-ink2:#8fb3a0; --crt-dim:#5d7a6c;
+  --crt-grid:#182720; --crt-axis:#2c4237;
+  --crt-green:#4dffa6; --crt-amber:#ffb000; --crt-red:#ff4936;
+  --crt-merge:#ff47e0; --crt-frame:rgba(255,73,54,.42);
+  --crt-font:"Cascadia Mono",Consolas,"IBM Plex Mono",ui-monospace,monospace;
 }
 
-.mdna-mono { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
+/* force the dark instrument surface regardless of the visitor's theme */
+html, body, gradio-app, .gradio-container {
+  background:#030605 !important; color:var(--crt-ink) !important; }
+body {
+  background:#030605 radial-gradient(120% 60% at 50% 0%,#0a1310 0%,#050807 55%,#030605 100%) fixed !important;
+  font-family:var(--crt-font) !important; }
+/* scanlines + vignette over the whole console */
+body::after { content:""; position:fixed; inset:0; pointer-events:none;
+  z-index:1000;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.11) 0 1px,transparent 1px 3px); }
 
-/* the theme font ships only 400 and 600 faces — <b> must use the real 600,
-   never a synthetic 700 (faux bold thins diagonals: the A in DNA) */
-.mdna-brand b, .mdna-thesis b, .mdna-card b, .mdna-foot b, .mdna-verdict b {
-  font-weight: 600; }
-.mdna-brand h1 { font-weight: 400; }
+.gradio-container { max-width:1000px !important; margin:0 auto !important;
+  font-family:var(--crt-font) !important; }
+footer { display:none !important; }
+a { color:var(--crt-green) !important; text-decoration-color:rgba(77,255,166,.4); }
+a:hover { text-shadow:0 0 8px rgba(77,255,166,.5); }
+::selection { background:rgba(77,255,166,.25); }
+
+/* strip Gradio's light card chrome so our panels sit on the console */
+.gradio-container .block, .gradio-container .form,
+.gradio-container .gr-group, .gradio-container .panel,
+.gradio-container .gr-box, .gradio-container .wrap {
+  background:transparent !important; border:none !important;
+  box-shadow:none !important; }
+
+/* inputs read like instrument fields */
+.gradio-container label span, .gradio-container .gr-text-input label {
+  color:var(--crt-amber) !important; font-family:var(--crt-font) !important;
+  font-size:11px !important; letter-spacing:.16em !important;
+  text-transform:uppercase !important; text-shadow:0 0 7px rgba(255,176,0,.35); }
+.gradio-container input[type="text"], .gradio-container textarea {
+  background:var(--crt-surface) !important; color:var(--crt-green) !important;
+  font-family:var(--crt-font) !important;
+  border:1px solid var(--crt-axis) !important; border-radius:3px !important;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.4) !important; }
+.gradio-container input[type="text"]:focus, .gradio-container textarea:focus {
+  border-color:var(--crt-green) !important;
+  box-shadow:0 0 0 1px var(--crt-green),0 0 12px rgba(77,255,166,.2) !important; }
+.gradio-container input::placeholder, .gradio-container textarea::placeholder {
+  color:var(--crt-dim) !important; }
+
+/* tabs */
+.gradio-container .tab-nav { border-bottom:1px solid var(--crt-frame) !important; }
+.gradio-container .tab-nav button { color:var(--crt-dim) !important;
+  font-family:var(--crt-font) !important; letter-spacing:.14em !important;
+  text-transform:uppercase !important; font-size:12px !important;
+  border:none !important; background:transparent !important; }
+.gradio-container .tab-nav button.selected { color:var(--crt-green) !important;
+  border-bottom:2px solid var(--crt-green) !important;
+  text-shadow:0 0 8px rgba(77,255,166,.5) !important; }
+
+/* examples grid */
+.gradio-container .gr-samples-table td, .gradio-container table.gr-samples-table td {
+  background:var(--crt-surface) !important; color:var(--crt-ink2) !important;
+  border:1px solid var(--crt-grid) !important;
+  font-family:var(--crt-font) !important; }
+.gradio-container .gr-samples-table td:hover { color:var(--crt-green) !important;
+  border-color:var(--crt-green) !important; }
+
+.mdna-mono { font-family:var(--crt-font); }
+.mdna-brand h1, .mdna-verdict b, .mdna-table td b { font-weight:700; }
 
 /* header */
-.mdna-brand { display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-  margin: 6px 0 2px; }
-.mdna-brand h1 { font-size: 28px; margin: 0; letter-spacing: -.01em;
-  color: var(--mdna-ink); }
-.mdna-brand h1 .dna { color: var(--mdna-accent); }
-.mdna-tag { font-family: ui-monospace, Consolas, monospace; font-size: 12px;
-  letter-spacing: .24em; color: var(--mdna-ink2);
-  border: 1px solid var(--mdna-axis); border-radius: 999px;
-  padding: 4px 12px 3px; background: var(--mdna-surface); }
-.mdna-links { display: flex; gap: 8px; }
-.mdna-links a { font-family: ui-monospace, Consolas, monospace; font-size: 12px;
-  letter-spacing: .12em; text-decoration: none; color: var(--mdna-ink2);
-  border: 1px solid var(--mdna-axis); border-radius: 999px;
-  padding: 5px 13px 4px; background: var(--mdna-surface); }
-.mdna-links a:hover { border-color: var(--mdna-ink2); color: var(--mdna-ink); }
-.mdna-thesis { max-width: 68ch; color: var(--mdna-ink2); margin: 10px 0 4px;
-  font-size: 15px; line-height: 1.55; text-wrap: balance; }
-.mdna-thesis b { color: var(--mdna-ink); }
+.mdna-brand { display:flex; align-items:baseline; gap:14px; flex-wrap:wrap;
+  margin:8px 0 2px; }
+.mdna-brand h1 { font-size:28px; margin:0; letter-spacing:.02em;
+  color:var(--crt-ink); text-shadow:0 0 14px rgba(201,234,214,.25); }
+.mdna-brand h1 .dna { color:var(--crt-green);
+  text-shadow:0 0 14px rgba(77,255,166,.55); }
+.mdna-tag { font-family:var(--crt-font); font-size:11px; letter-spacing:.24em;
+  color:var(--crt-red); text-transform:uppercase;
+  border:1px solid rgba(255,73,54,.7); border-radius:3px;
+  padding:3px 10px; background:rgba(7,11,10,.85);
+  text-shadow:0 0 9px rgba(255,73,54,.6); }
+.mdna-brand .spacer { flex:1; }
+.mdna-links { display:flex; gap:8px; }
+.mdna-links a { font-family:var(--crt-font); font-size:12px; letter-spacing:.1em;
+  text-decoration:none; color:var(--crt-green) !important; text-transform:uppercase;
+  border:1px solid rgba(77,255,166,.5); border-radius:3px;
+  padding:6px 12px; background:rgba(7,11,10,.85); }
+.mdna-links a:hover { border-color:var(--crt-green);
+  box-shadow:0 0 12px rgba(77,255,166,.25); }
+.mdna-thesis { max-width:70ch; color:var(--crt-ink2); margin:12px 0 4px;
+  font-size:14.5px; line-height:1.6; text-wrap:balance; }
+.mdna-thesis b { color:var(--crt-ink); font-weight:700; }
 
-/* scan / decompose buttons */
-#mdna-scan, #mdna-decompose { background: var(--mdna-accent) !important;
-  color: #fff !important; border: none !important; box-shadow: none !important; }
-#mdna-scan:hover, #mdna-decompose:hover { filter: brightness(1.08); }
-#mdna-decompose { align-self: end; }
+/* scan / decompose buttons — the console's green action keys */
+#mdna-scan, #mdna-decompose { background:var(--crt-green) !important;
+  color:#04120b !important; font-family:var(--crt-font) !important;
+  font-weight:700 !important; letter-spacing:.1em !important;
+  text-transform:uppercase !important; border:none !important;
+  border-radius:3px !important;
+  box-shadow:0 0 14px rgba(77,255,166,.3) !important; }
+#mdna-scan:hover, #mdna-decompose:hover { filter:brightness(1.1);
+  box-shadow:0 0 20px rgba(77,255,166,.5) !important; }
+#mdna-decompose { align-self:end; }
 
-/* result card */
-.mdna-card { border: 1px solid var(--mdna-grid); border-radius: 14px;
-  background: var(--mdna-card); box-shadow: var(--mdna-shadow);
-  padding: 20px 22px 14px; margin: 6px 0 2px; color: var(--mdna-ink);
-  line-height: 1.5; }
-.mdna-eyebrow { font-family: ui-monospace, Consolas, monospace;
-  font-size: 11.5px; letter-spacing: .22em; color: var(--mdna-muted);
-  margin-bottom: 10px; }
-.mdna-verdict { display: inline-block; padding: .38rem .9rem;
-  border-radius: 8px; color: #fff; font-size: 1.06rem; }
-.mdna-desc { color: var(--mdna-ink2); margin: .6rem 0 .2rem; }
-.mdna-claims { margin: .6rem 0; }
-.mdna-pill { display: inline-block; padding: .1rem .55rem; border-radius: 999px;
-  color: #fff; font-size: .8rem; font-weight: 600; vertical-align: 1px; }
-.mdna-dim { color: var(--mdna-muted); font-size: .9rem; }
-.mdna-note { margin: .25rem 0; }
-.mdna-table { border-collapse: collapse; margin: .75rem 0; width: 100%; }
-.mdna-table th, .mdna-table td { text-align: left; padding: .32rem .6rem;
-  border-bottom: 1px solid var(--mdna-grid); font-size: .92rem; }
-.mdna-table th { font-family: ui-monospace, Consolas, monospace;
-  font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
-  color: var(--mdna-muted); border-bottom: 1px solid var(--mdna-axis); }
-.mdna-table .num { text-align: right; font-variant-numeric: tabular-nums; }
-.mdna-details { margin: .55rem 0; border: 1px solid var(--mdna-grid);
-  border-radius: 10px; background: var(--mdna-surface); }
-.mdna-details summary { cursor: pointer; padding: .55rem .9rem;
-  font-family: ui-monospace, Consolas, monospace; font-size: 12px;
-  letter-spacing: .14em; color: var(--mdna-ink2); }
-.mdna-details[open] summary { border-bottom: 1px solid var(--mdna-grid); }
-.mdna-details iframe { width: 100%; height: 1250px; border: none;
-  border-radius: 0 0 10px 10px; background: #fff; display: block; }
-.mdna-details pre { margin: 0; padding: .8rem 1rem; max-height: 480px;
-  overflow: auto; font-size: 12px; }
-.mdna-stamp { color: var(--mdna-muted); font-size: .82rem; margin-top: .8rem;
-  font-family: ui-monospace, Consolas, monospace; }
+/* result card — a panel racked into the console */
+.mdna-card { border:1px solid var(--crt-frame); border-radius:5px;
+  background:var(--crt-surface);
+  box-shadow:0 0 0 1px rgba(0,0,0,.55),0 16px 44px rgba(0,0,0,.4);
+  padding:20px 22px 14px; margin:10px 0 2px; color:var(--crt-ink);
+  line-height:1.55; }
+.mdna-eyebrow { font-family:var(--crt-font); font-size:11px; letter-spacing:.22em;
+  text-transform:uppercase; color:var(--crt-red);
+  text-shadow:0 0 8px rgba(255,73,54,.4); margin-bottom:10px; }
+.mdna-eyebrow::before { content:"\\25B8  "; }
+.mdna-verdict { display:inline-block; padding:.4rem .9rem; border-radius:4px;
+  color:#fff; font-size:1.04rem; font-family:var(--crt-font);
+  box-shadow:0 0 16px rgba(0,0,0,.4); }
+.mdna-desc { color:var(--crt-ink2); margin:.6rem 0 .2rem; }
+.mdna-claims { margin:.6rem 0; }
+.mdna-pill { display:inline-block; padding:.1rem .55rem; border-radius:3px;
+  color:#fff; font-size:.8rem; font-weight:700; vertical-align:1px;
+  font-family:var(--crt-font); }
+.mdna-dim { color:var(--crt-dim); font-size:.9rem; }
+.mdna-note { margin:.25rem 0; }
+.mdna-table { border-collapse:collapse; margin:.8rem 0; width:100%; }
+.mdna-table th, .mdna-table td { text-align:left; padding:.34rem .6rem;
+  border-bottom:1px solid var(--crt-grid); font-size:.92rem; }
+.mdna-table th { font-family:var(--crt-font); font-size:10.5px;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--crt-red);
+  text-shadow:0 0 7px rgba(255,73,54,.3);
+  border-bottom:1px solid var(--crt-frame); }
+.mdna-table .num { text-align:right; font-variant-numeric:tabular-nums;
+  color:var(--crt-green); }
+.mdna-table td b { color:var(--crt-green); }
+.mdna-details { margin:.6rem 0; border:1px solid var(--crt-grid);
+  border-radius:4px; background:var(--crt-plane); }
+.mdna-details summary { cursor:pointer; padding:.55rem .9rem;
+  font-family:var(--crt-font); font-size:12px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--crt-green); }
+.mdna-details[open] summary { border-bottom:1px solid var(--crt-grid); }
+.mdna-details iframe { width:100%; height:1250px; border:none;
+  border-radius:0 0 4px 4px; background:#fff; display:block; }
+.mdna-details pre { margin:0; padding:.8rem 1rem; max-height:480px;
+  overflow:auto; font-size:12px; color:var(--crt-ink2);
+  font-family:var(--crt-font); }
+.mdna-stamp { color:var(--crt-dim); font-size:.82rem; margin-top:.9rem;
+  letter-spacing:.04em; font-family:var(--crt-font); }
 
 /* footer */
-.mdna-foot { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
-  margin-top: 10px; padding-top: 16px; border-top: 1px solid var(--mdna-grid); }
-@media (max-width: 760px) { .mdna-foot { grid-template-columns: 1fr; } }
-.mdna-foot h4 { font-family: ui-monospace, Consolas, monospace;
-  font-size: 11.5px; letter-spacing: .22em; color: var(--mdna-muted);
-  margin: 0 0 6px; font-weight: 600; }
-.mdna-foot p { color: var(--mdna-ink2); font-size: .86rem; line-height: 1.55;
-  margin: 0; }
-.mdna-foot code { font-size: .8rem; }
-.mdna-foot a { color: var(--mdna-accent); text-decoration: none; }
-.mdna-foot a:hover { text-decoration: underline; }
+.mdna-foot { display:grid; grid-template-columns:repeat(3, 1fr); gap:20px;
+  margin-top:14px; padding-top:16px; border-top:1px solid var(--crt-frame); }
+@media (max-width:760px) { .mdna-foot { grid-template-columns:1fr; } }
+.mdna-foot h4 { font-family:var(--crt-font); font-size:11px; letter-spacing:.22em;
+  text-transform:uppercase; color:var(--crt-red);
+  text-shadow:0 0 7px rgba(255,73,54,.35); margin:0 0 6px; font-weight:700; }
+.mdna-foot h4::before { content:"\\25B8  "; }
+.mdna-foot p { color:var(--crt-ink2); font-size:.86rem; line-height:1.6;
+  margin:0; }
+.mdna-foot code { font-size:.8rem; color:var(--crt-green);
+  font-family:var(--crt-font); }
+.mdna-foot a { color:var(--crt-green) !important; text-decoration:none; }
+.mdna-foot a:hover { text-shadow:0 0 8px rgba(77,255,166,.5); }
 """
 
 HEADER = f"""
 <div class="mdna-brand">
-  <h1><span class="dna">🧬</span> model<b>DNA</b></h1>
-  <span class="mdna-tag">LIVE SCANNER</span>
+  <h1>model<span class="dna">DNA</span></h1>
+  <span class="mdna-tag">▸ live scanner</span>
+  <span class="spacer"></span>
   <div class="mdna-links">
-    <a href="{ATLAS_URL}" target="_blank">ATLAS ↗</a>
-    <a href="{REPO_URL}" target="_blank">GITHUB ↗</a>
+    <a href="{ATLAS_URL}" target="_blank">Atlas ↗</a>
+    <a href="{REPO_URL}" target="_blank">GitHub ↗</a>
   </div>
 </div>
 <p class="mdna-thesis">Paste an open-weight model's Hub repo id. modelDNA
