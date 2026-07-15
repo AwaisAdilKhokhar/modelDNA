@@ -376,9 +376,13 @@ def db_build(
         raise typer.Exit(1)
 
 
-#: release asset published by .github/workflows/refdb-release.yml
+#: Reference-DB archive published by .github/workflows/refdb-release.yml.
+#: Pinned to an explicit release tag, NOT releases/latest: the repo also cuts
+#: non-DB releases (the tech report, LineageBench) and whichever is newest
+#: owns the "latest" pointer, so `latest/download/...` 404s the moment a
+#: report release lands. Bump this tag whenever a newer DB release is cut.
 DEFAULT_DB_URL = (
-    "https://github.com/AwaisAdilKhokhar/modelDNA/releases/latest/download/modeldna-refdb.tar.gz"
+    "https://github.com/AwaisAdilKhokhar/modelDNA/releases/download/refdb-2026-07-08/modeldna-refdb.tar.gz"
 )
 
 

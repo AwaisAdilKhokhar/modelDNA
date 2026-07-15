@@ -230,9 +230,9 @@ are small (~55 MB for the full seed list) and derived from public weights:
 modeldna db pull                 # seconds; then a scan only fetches your suspect
 ```
 
-`db pull` takes the latest published archive from this repo's GitHub
-releases (override with `--url` or `MODELDNA_DB_URL`; archives are produced
-by `modeldna db export` / the `refdb-release` workflow). To build it
+`db pull` fetches the pinned reference-DB release archive from this repo's
+GitHub releases (override with `--url` or `MODELDNA_DB_URL`; archives are
+produced by `modeldna db export` / the `refdb-release` workflow). To build it
 yourself instead:
 
 `modeldna db build` fingerprints a seed list of widely-forked bases (Llama,

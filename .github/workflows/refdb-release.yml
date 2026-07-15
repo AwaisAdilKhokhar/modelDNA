@@ -59,6 +59,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # --latest reclaims the "latest" pointer for this DB release, but
+          # note db pull does NOT rely on it: DEFAULT_DB_URL in cli.py is
+          # pinned to an explicit tag so a later non-DB release (report,
+          # LineageBench) can't hijack the pointer and 404 the pull.
           gh release create "${{ inputs.tag }}" modeldna-refdb.tar.gz \
+            --latest \
             --title "Reference DB ${{ inputs.tag }}" \
             --notes "Prebuilt base-model fingerprint DB. Install with: \`modeldna db pull\`"
+          echo "::notice::Published ${{ inputs.tag }}. Bump DEFAULT_DB_URL in src/modeldna/cli.py to this tag so db pull serves it."
