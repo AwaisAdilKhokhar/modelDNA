@@ -1,5 +1,6 @@
 # modelDNA
 
+[![arXiv](https://img.shields.io/badge/arXiv-2607.10617-b31b1b.svg)](https://arxiv.org/abs/2607.10617)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21305586.svg)](https://doi.org/10.5281/zenodo.21305586)
 
 [![The Atlas: an interactive lineage constellation of 55 Hub models](https://raw.githubusercontent.com/AwaisAdilKhokhar/modelDNA/main/.github/assets/atlas.gif?v=2)](https://awaisadilkhokhar.github.io/modelDNA/)
@@ -41,7 +42,8 @@ edges labeled with their fitted mixture weights. Regenerate it yourself with `py
 paste a Hub repo id into the hosted scanner and get a verdict in a minute or
 two, no install needed.
 
-**[Read the tech report](https://github.com/AwaisAdilKhokhar/modelDNA/releases/download/report-v1.0/modeldna-tech-report.pdf)** —
+**[Read the tech report](https://github.com/AwaisAdilKhokhar/modelDNA/releases/download/report-v1.0/modeldna-tech-report.pdf)**
+([arXiv:2607.10617](https://arxiv.org/abs/2607.10617)) —
 *modelDNA: Calibrated Lineage Verification and Merge Decomposition from
 Sampled Weight Fingerprints* (v1.0, July 2026): the fingerprint design, the
 calibrated verdict engine, the merge-decomposition math, and every benchmark
@@ -394,19 +396,23 @@ See the [technical report](https://github.com/AwaisAdilKhokhar/modelDNA/releases
 
 If you use modelDNA, the atlas dataset, or LineageBench, please cite the
 technical report
-([PDF](https://github.com/AwaisAdilKhokhar/modelDNA/releases/download/report-v1.0/modeldna-tech-report.pdf)
+([arXiv:2607.10617](https://arxiv.org/abs/2607.10617)
+· [PDF](https://github.com/AwaisAdilKhokhar/modelDNA/releases/download/report-v1.0/modeldna-tech-report.pdf)
 · [DOI 10.5281/zenodo.21305586](https://doi.org/10.5281/zenodo.21305586)):
 
 ```bibtex
 @techreport{modeldna2026,
-  title  = {modelDNA: Calibrated Lineage Verification and Merge
-            Decomposition from Sampled Weight Fingerprints},
-  author = {Muhammad Awais Bin Adil and Saad Aamir},
-  year   = {2026},
-  month  = {July},
-  doi    = {10.5281/zenodo.21305586},
-  url    = {https://github.com/AwaisAdilKhokhar/modelDNA},
-  note   = {v1.0. Live scanner: huggingface.co/spaces/AwaisAdilKhokhar/modelDNA}
+  title         = {modelDNA: Calibrated Lineage Verification and Merge
+                   Decomposition from Sampled Weight Fingerprints},
+  author        = {Muhammad Awais Bin Adil and Saad Aamir},
+  year          = {2026},
+  month         = {July},
+  eprint        = {2607.10617},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  doi           = {10.5281/zenodo.21305586},
+  url           = {https://arxiv.org/abs/2607.10617},
+  note          = {v1.0. Live scanner: huggingface.co/spaces/AwaisAdilKhokhar/modelDNA}
 }
 ```
 
