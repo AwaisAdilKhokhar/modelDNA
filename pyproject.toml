@@ -39,6 +39,11 @@ modeldna = "modeldna.cli:app"
 
 [project.urls]
 Homepage = "https://github.com/AwaisAdilKhokhar/modelDNA"
+Repository = "https://github.com/AwaisAdilKhokhar/modelDNA"
+Issues = "https://github.com/AwaisAdilKhokhar/modelDNA/issues"
+Paper = "https://arxiv.org/abs/2607.10617"
+Demo = "https://huggingface.co/spaces/AwaisAdilKhokhar/modelDNA"
+Dataset = "https://huggingface.co/datasets/AwaisAdilKhokhar/modeldna-atlas"
 
 [tool.setuptools.packages.find]
 where = ["src"]
